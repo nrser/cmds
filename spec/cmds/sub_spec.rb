@@ -27,4 +27,8 @@ describe "Cmds.sub" do
       ]
     ).to eq 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
   end
+
+  it "should raise TypeError if subs in not an array or a hash" do
+    expect{Cmds.sub "a %{b} %{c}", "dee!"}.to raise_error TypeError
+  end
 end # ::sub
