@@ -160,6 +160,7 @@ class Cmds
     cmd % quoted
   end # ::sub
 
+  # create a new Cmd from template and subs and call it
   def self.run template, subs = nil
     self.new(template, subs).call
   end
@@ -167,7 +168,7 @@ class Cmds
   def initialize template, subs = nil
     @template = template
     @subs = subs
-  end # #sub
+  end #sub
 
   def call subs = nil
     subs = merge_subs subs
@@ -181,7 +182,7 @@ class Cmds
     out, err, status = Open3.capture3 cmd
 
     Cmds::Result.new cmd, status, out, err
-  end # #call
+  end #call
 
   private
 
@@ -213,11 +214,12 @@ class Cmds
           "#{ to_merge.inspect }"
 
       end # case @subs
-    end # #merge_subs
+    end #merge_subs
 
   # end private
 end # Cmds
 
+# convenience for Cmds::run
 def Cmds *args
   Cmds.run *args
 end
