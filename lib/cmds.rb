@@ -1,19 +1,27 @@
 require 'shellwords'
+require 'open3'
 
 require "cmds/version"
 
 class Cmds
-  # class Result
-  #   attr_reader :cmd, :status, :out, :err
+  class Result
+    attr_reader :cmd, :status, :out, :err
 
-  #   def ok?
-  #     @status == 0
-  #   end
+    def initialize cmd, status, out, err
+      @cmd = cmd
+      @status = status
+      @out = out
+      @err = err
+    end
 
-  #   def error?
-  #     ! ok?
-  #   end
-  # end
+    def ok?
+      @status == 0
+    end
+
+    def error?
+      ! ok?
+    end
+  end
 
   # shortcut for Shellwords.escape
   # 
@@ -151,4 +159,65 @@ class Cmds
     end
     cmd % quoted
   end # ::sub
+
+  def self.run template, subs = nil
+    self.new(template, subs).call
+  end
+
+  def initialize template, subs = nil
+    @template = template
+    @subs = subs
+  end # #sub
+
+  def call subs = nil
+    subs = merge_subs subs
+
+    cmd = if subs
+      Cmds.sub @template, subs
+    else
+      @template
+    end
+
+    out, err, status = Open3.capture3 cmd
+
+    Cmds::Result.new cmd, status, out, err
+  end # #call
+
+  private
+
+    def merge_subs to_merge
+      # short-circuit when the arg is nil
+      return @subs if to_merge.nil?
+
+      case @subs
+      when nil
+        to_merge
+
+      when Array
+        unless to_merge.is_a? Array
+          raise "can't merge non-array substitutions #{ to_merge.inspect } " +
+            "with existing array #{ @subs.inspect }"
+        end
+        @subs + to_merge
+
+      when Hash
+        unless to_merge.is_a? Hash
+          raise "can't merge non-hash substitutions #{ to_merge.inspect } " +
+            "with existing hash #{ @subs.inspect }"
+        end
+
+        @subs.merge to_merge
+
+      else
+        raise "don't know how to handle #{ to_merge.class }: " + 
+          "#{ to_merge.inspect }"
+
+      end # case @subs
+    end # #merge_subs
+
+  # end private
 end # Cmds
+
+def Cmds *args
+  Cmds.run *args
+end

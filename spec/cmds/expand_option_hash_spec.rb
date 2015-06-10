@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Cmds.expand_option_hash_spec" do
+describe "Cmds::expand_option_hash_spec" do
 
   context "one single char key" do
     it "handles nil value" do

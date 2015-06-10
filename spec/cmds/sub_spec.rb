@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Cmds.sub" do
+describe "Cmds::sub" do
   it "should work with a hash" do
     expect(
       Cmds.sub "psql %{opts} %{database} < %{filepath}",
