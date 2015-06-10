@@ -3,16 +3,6 @@ require 'json'
 require 'spec_helper'
 
 describe "Cmds::run" do
-  shared_examples "ok" do
-    it "should be ok" do
-      expect( result.ok? ).to be true
-    end
-
-    it "should have empty err" do
-      expect( result.err ).to eq ""
-    end
-  end # ok
-
   context "echo_cmd.rb 'hello world!'" do
 
     shared_examples "executes correctly" do
@@ -40,6 +30,16 @@ describe "Cmds::run" do
     end
 
   end # context echo_cmd.rb 'hello world!'
+
+  # context "feeding kwargs to args cmd" do
+  #   let(:result) {
+  #     Cmds "./test/echo_cmd.rb %s", s: "sup y'all"
+  #   }
+
+  #   it "" do
+  #     expect( result.cmd ).to eq nil
+  #   end
+  # end
 
   it "should error when second (subs) arg is not a hash or array" do
     expect {
