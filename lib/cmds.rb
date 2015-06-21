@@ -1,6 +1,12 @@
+# stdlib
 require 'shellwords'
 require 'open3'
+require 'erb'
 
+# deps
+require 'nrser'
+
+# project
 require "cmds/version"
 
 class Cmds
@@ -20,6 +26,35 @@ class Cmds
 
     def error?
       ! ok?
+    end
+  end
+
+  class ERBContext
+    def initialize args, kwargs
+      @args = args
+      @kwargs = kwargs
+      @arg_index = 0
+    end
+
+    def method_missing sym, *args, &block
+      if args.empty? && block.nil?
+        if sym.to_s[-1] == '?'
+          key = sym.to_s[0...-1].to_sym
+          @kwargs[key]
+        else
+          @kwargs.fetch sym
+        end
+      else
+        super
+      end
+    end
+
+    def get_binding
+      binding
+    end
+
+    def arg
+      @args.fetch(@arg_index).tap {@arg_index += 1}
     end
   end
 
@@ -144,20 +179,24 @@ class Cmds
   #         # => 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
   # 
   def self.sub cmd, subs
-    quoted = case subs
+    args = []
+    kwargs = {}
+
+    case subs
     when Hash
-      subs.map {|key, sub|
+      kwargs = subs.map {|key, sub|
         [key, expand_sub(sub)]
       }.to_h
 
     when Array
-      subs.map {|sub| expand_sub sub }
+      args = subs.map {|sub| expand_sub sub }
 
     else
       raise TypeError.new "subs should be Hash or Array, not #{ subs.inspect }"
 
     end
-    cmd % quoted
+    
+    NRSER.squish ERB.new(cmd).result(ERBContext.new(args, kwargs).get_binding)
   end # ::sub
 
   # create a new Cmd from template and subs and call it
