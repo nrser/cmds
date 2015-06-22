@@ -9,8 +9,7 @@ describe "Cmds::call" do
 
     ["arg one", "arg two", "arg three"].each do |arg|
       [args_cmd.call([arg]), kwds_cmd.call(s: arg)].each do |result|
-        expect( result.ok? ).to be true
-        expect( JSON.load(result.out)['ARGV'][0] ).to eq arg
+        expect_argv( result ).to eq [arg]
       end
     end
   end # is reusable

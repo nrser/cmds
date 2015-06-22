@@ -262,6 +262,11 @@ class Cmds
     Cmds::Result.new cmd, status, out, err
   end #call
 
+  # returns a new `Cmds` with the subs merged in
+  def curry *subs
+    self.class.new @template, *merge_subs(subs)
+  end
+
   private
 
     def merge_subs subs
