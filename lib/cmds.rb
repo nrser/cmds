@@ -249,16 +249,13 @@ class Cmds
 
   def initialize template, *subs
     @template = template
-    @args = []
-    @kwds = {}
-
-    merge_subs! subs
+    @args, @kwds = Cmds.subs_to_args_and_kwds subs
   end #initialize
 
   def call *subs
-    merge_subs! subs
+    args, kwds = merge_subs subs
 
-    cmd = Cmds.sub @template, @args, @kwds
+    cmd = Cmds.sub @template, args, kwds
 
     out, err, status = Open3.capture3 cmd
 
@@ -267,18 +264,11 @@ class Cmds
 
   private
 
-    def merge_subs! subs
-      # short-circuit when there are no subs to merge
-      return if subs.empty?
-
+    def merge_subs subs
       # break `subs` into `args` and `kwds`
       args, kwds = Cmds.subs_to_args_and_kwds subs
 
-      # concat args
-      @args = @args + args
-
-      # merge kwds
-      @kwds = @kwds.merge kwds
+      [@args + args, @kwds.merge(kwds)]
     end #merge_subs
 
   # end private

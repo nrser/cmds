@@ -3,21 +3,15 @@ require 'json'
 require 'spec_helper'
 
 describe "Cmds::call" do
-  context "reused command" do
-    let(:args_cmd) { Cmds.new "./test/echo_cmd.rb <%= arg %>" }
-    let(:kwds_cmd) { Cmds.new "./test/echo_cmd.rb <%= s %>" }
+  it "is reusable" do
+    args_cmd = Cmds.new "./test/echo_cmd.rb <%= arg %>"
+    kwds_cmd = Cmds.new "./test/echo_cmd.rb <%= s %>"
 
-    it "is reusable" do
-      {
-        args_cmd => ["hey there"],
-        kwds_cmd => {s: "hey there"},
-      }.each do |cmd, arg|
-        result = cmd.call arg
-
+    ["arg one", "arg two", "arg three"].each do |arg|
+      [args_cmd.call([arg]), kwds_cmd.call(s: arg)].each do |result|
         expect( result.ok? ).to be true
-
-        expect( JSON.load(result.out)['ARGV'][0] ).to eq "hey there"
-      end # each cmd => arg
-    end # is reusable
-  end # reused command
+        expect( JSON.load(result.out)['ARGV'][0] ).to eq arg
+      end
+    end
+  end # is reusable
 end # Cmds::run
