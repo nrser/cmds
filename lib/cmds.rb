@@ -1,7 +1,7 @@
 # stdlib
 require 'shellwords'
 require 'open3'
-require 'erb'
+require 'erubis'
 
 # deps
 require 'nrser'
@@ -26,6 +26,14 @@ class Cmds
 
     def error?
       ! ok?
+    end
+  end
+
+  # extension of Erubis' EscapedEruby (which auto-escapes `<%= %>` and
+  # leaves `<%== %>` raw) that calls `Cmds.expand_sub` on the value
+  class ShellEruby < Erubis::EscapedEruby
+    def escaped_expr code
+      "Cmds.expand_sub(#{code.strip})"
     end
   end
 
@@ -134,6 +142,9 @@ class Cmds
   # expand one of the substitutions
   def self.expand_sub sub
     case sub
+    when nil
+      # nil is just an empty string, NOT an empty string bash token
+      ''
     when Hash
       expand_option_hash sub
     else
@@ -178,45 +189,76 @@ class Cmds
   #           }
   #         # => 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
   # 
-  def self.sub cmd, subs
-    args = []
-    kwargs = {}
+  def self.sub cmd, args = [], kwds = {}
+    raise TypeError.new("args must be an Array") unless args.is_a? Array
+    raise TypeError.new("kwds must be an Hash") unless kwds.is_a? Hash
 
-    case subs
-    when Hash
-      kwargs = subs.map {|key, sub|
-        [key, expand_sub(sub)]
-      }.to_h
-
-    when Array
-      args = subs.map {|sub| expand_sub sub }
-
-    else
-      raise TypeError.new "subs should be Hash or Array, not #{ subs.inspect }"
-
-    end
-    
-    NRSER.squish ERB.new(cmd).result(ERBContext.new(args, kwargs).get_binding)
+    NRSER.squish ShellEruby.new(cmd).result(ERBContext.new(args, kwds).get_binding)
   end # ::sub
 
-  # create a new Cmd from template and subs and call it
-  def self.run template, subs = nil
-    self.new(template, subs).call
+  def self.subs_to_args_and_kwds subs
+    args = []
+    kwds = {}
+
+    case subs.length
+    when 0
+      # pass
+    when 1
+      case subs[0]
+      when Hash
+        kwds = subs[0]
+
+      when Array
+        args = subs[0]
+
+      else
+        raise TypeError.new NRSER.squish <<-BLOCK
+          first *subs arg must be Array or Hash, not #{ subs[0].inspect }
+        BLOCK
+      end
+
+    when 2
+      unless subs[0].is_a? Array
+        raise TypeError.new NRSER.squish <<-BLOCK
+          first *subs arg needs to be an array, not #{ subs[0].inspect }
+        BLOCK
+      end
+
+      unless subs[1].is_a? Hash
+        raise TypeError.new NRSER.squish <<-BLOCK
+          third *subs arg needs to be a Hash, not #{ subs[1].inspect }
+        BLOCK
+      end
+
+      args, kwds = subs
+    else
+      raise ArgumentError.new NRSER.squish <<-BLOCK
+        must provide one or two *subs arguments, received #{ 1 + subs.length }
+      BLOCK
+    end
+
+    [args, kwds]
   end
 
-  def initialize template, subs = nil
+  # create a new Cmd from template and subs and call it
+  def self.run template, *subs
+    self.new(template, *subs).call
+  end
+
+  attr_reader :tempalte, :args, :kwds
+
+  def initialize template, *subs
     @template = template
-    @subs = subs
-  end #sub
+    @args = []
+    @kwds = {}
 
-  def call subs = nil
-    subs = merge_subs subs
+    merge_subs! subs
+  end #initialize
 
-    cmd = if subs
-      Cmds.sub @template, subs
-    else
-      @template
-    end
+  def call *subs
+    merge_subs! subs
+
+    cmd = Cmds.sub @template, @args, @kwds
 
     out, err, status = Open3.capture3 cmd
 
@@ -225,34 +267,18 @@ class Cmds
 
   private
 
-    def merge_subs to_merge
-      # short-circuit when the arg is nil
-      return @subs if to_merge.nil?
+    def merge_subs! subs
+      # short-circuit when there are no subs to merge
+      return if subs.empty?
 
-      case @subs
-      when nil
-        to_merge
+      # break `subs` into `args` and `kwds`
+      args, kwds = Cmds.subs_to_args_and_kwds subs
 
-      when Array
-        unless to_merge.is_a? Array
-          raise "can't merge non-array substitutions #{ to_merge.inspect } " +
-            "with existing array #{ @subs.inspect }"
-        end
-        @subs + to_merge
+      # concat args
+      @args = @args + args
 
-      when Hash
-        unless to_merge.is_a? Hash
-          raise "can't merge non-hash substitutions #{ to_merge.inspect } " +
-            "with existing hash #{ @subs.inspect }"
-        end
-
-        @subs.merge to_merge
-
-      else
-        raise "don't know how to handle #{ to_merge.class }: " + 
-          "#{ to_merge.inspect }"
-
-      end # case @subs
+      # merge kwds
+      @kwds = @kwds.merge kwds
     end #merge_subs
 
   # end private

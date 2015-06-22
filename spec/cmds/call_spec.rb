@@ -4,8 +4,8 @@ require 'spec_helper'
 
 describe "Cmds::call" do
   context "reused command" do
-    let(:args_cmd) { Cmds.new "./test/echo_cmd.rb %s" }
-    let(:kwds_cmd) { Cmds.new "./test/echo_cmd.rb %{s}" }
+    let(:args_cmd) { Cmds.new "./test/echo_cmd.rb <%= arg %>" }
+    let(:kwds_cmd) { Cmds.new "./test/echo_cmd.rb <%= s %>" }
 
     it "is reusable" do
       {

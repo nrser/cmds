@@ -15,7 +15,7 @@ describe "Cmds::run" do
 
     context "positional args" do
       let(:result) {
-        Cmds "./test/echo_cmd.rb %s", ["hello world!"]
+        Cmds "./test/echo_cmd.rb <%= arg %>", ["hello world!"]
       }
 
       it_behaves_like "executes correctly"
@@ -23,7 +23,7 @@ describe "Cmds::run" do
 
     context "keyword args" do
       let(:result) {
-        Cmds "./test/echo_cmd.rb %{s}", s: "hello world!"
+        Cmds "./test/echo_cmd.rb <%= s %>", s: "hello world!"
       }
 
       it_behaves_like "executes correctly"
@@ -43,7 +43,7 @@ describe "Cmds::run" do
 
   it "should error when second (subs) arg is not a hash or array" do
     expect {
-      Cmds "./test/echo_cmd.rb %s", "hello world!"
+      Cmds "./test/echo_cmd.rb <%= arg %>", "hello world!"
     }.to raise_error TypeError
   end
 end # Cmds::run

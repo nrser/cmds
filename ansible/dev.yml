@@ -1,0 +1,25 @@
+---
+- hosts: localhost
+
+  vars:
+
+    ref_repos:
+      github:
+      - owner:    rails
+        name:     rails
+        version:  master
+        dir_name: rails
+
+  tasks:
+
+  - name: install gems
+    command: bundle install --path=.bundle
+    args:
+      chdir: ..
+
+  - name: clone reference repos
+    git: repo=git@github.com:{{ item.owner }}/{{ item.name }}
+         dest="../ref/repos/{{ item.dir_name }}"
+         update=no
+         version={{ item.version }}
+    with_items: ref_repos.github
