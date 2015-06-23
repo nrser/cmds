@@ -33,14 +33,14 @@ class Cmds
   # leaves `<%== %>` raw) that calls `Cmds.expand_sub` on the value
   class ShellEruby < Erubis::EscapedEruby
     def escaped_expr code
-      "Cmds.expand_sub(#{code.strip})"
+      "::Cmds.expand_sub(#{code.strip})"
     end
   end
 
-  class ERBContext
-    def initialize args, kwargs
+  class ERBContext < BasicObject
+    def initialize args, kwds
       @args = args
-      @kwargs = kwargs
+      @kwds = kwds
       @arg_index = 0
     end
 
@@ -48,9 +48,9 @@ class Cmds
       if args.empty? && block.nil?
         if sym.to_s[-1] == '?'
           key = sym.to_s[0...-1].to_sym
-          @kwargs[key]
+          @kwds[key]
         else
-          @kwargs.fetch sym
+          @kwds.fetch sym
         end
       else
         super
@@ -58,7 +58,7 @@ class Cmds
     end
 
     def get_binding
-      binding
+      ::Kernel.send :binding
     end
 
     def arg

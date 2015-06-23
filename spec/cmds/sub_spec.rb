@@ -41,6 +41,20 @@ describe "Cmds::sub" do
     ).to eq "blah ex why"
   end
 
+  it "should work with direct reference to args" do
+    expect(
+      Cmds.sub "psql <%= @args[2] %> <%= @args[0] %> < <%= @args[1] %>", [
+        "blah",
+        "/where ever/it/is.psql",
+        {
+          username: "bingo bob",
+          host: "localhost",
+          port: 12345,
+        },
+      ]
+    ).to eq 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
+  end
+
   context "if statement" do
     let(:tpl) {
       <<-BLOCK
