@@ -136,4 +136,24 @@ describe "Cmds::sub" do
       }.to raise_error ArgumentError
     end
   end # errors
+
+  context "shortcuts" do
+    it "should replace %s" do
+      expect(
+        Cmds.sub "./test/echo_cmd.rb %s", ["hello world!"]
+      ).to eq './test/echo_cmd.rb hello\ world\!'
+    end
+
+    it "should replace %{key}" do
+      expect(
+        Cmds.sub "./test/echo_cmd.rb %{key}", [], key: "hello world!"
+      ).to eq './test/echo_cmd.rb hello\ world\!'
+    end
+
+    it "should replace %<key>s" do
+      expect(
+        Cmds.sub "./test/echo_cmd.rb %<key>s", [], key: "hello world!"
+      ).to eq './test/echo_cmd.rb hello\ world\!'
+    end
+  end # shortcuts
 end # ::sub

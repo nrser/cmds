@@ -193,7 +193,10 @@ class Cmds
     raise TypeError.new("args must be an Array") unless args.is_a? Array
     raise TypeError.new("kwds must be an Hash") unless kwds.is_a? Hash
 
-    NRSER.squish ShellEruby.new(cmd).result(ERBContext.new(args, kwds).get_binding)
+    context = ERBContext.new(args, kwds)
+    erb = ShellEruby.new(replace_shortcuts cmd)
+
+    NRSER.squish erb.result(context.get_binding)
   end # ::sub
 
   def self.subs_to_args_and_kwds subs
