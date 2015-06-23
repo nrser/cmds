@@ -253,9 +253,9 @@ class Cmds
         '\1<%= arg %>\2'
       )
       .gsub(
-        # %%s => %s
-        /(\A|[[:space:]])\%\%s(\Z|[[:space:]])/,
-        '\1%s\2'
+        # %%s => %s (escpaing)
+        /(\A|[[:space:]])(\%+)\%s(\Z|[[:space:]])/,
+        '\1\2s\3'
       )
       .gsub(
         # %{key} => <%= key %>, %{key?} => <%= key? %>
@@ -263,9 +263,9 @@ class Cmds
         '\1<%= \2 %>\3'
       )
       .gsub(
-        # %%{key} => %{key}, %%{key?} => %{key?}
-        /(\A|[[:space:]])\%\%\{([a-zA-Z_]+\??)\}(\Z|[[:space:]])/,
-        '\1%{\2}\3'
+        # %%{key} => %{key}, %%{key?} => %{key?} (escpaing)
+        /(\A|[[:space:]])(\%+)\%\{([a-zA-Z_]+\??)\}(\Z|[[:space:]])/,
+        '\1\2{\3}\4'
       )
       .gsub(
         # %<key>s => <%= key %>, %<key?>s => <%= key? %>
@@ -273,9 +273,9 @@ class Cmds
         '\1<%= \2 %>\3'
       )
       .gsub(
-        # %%<key>s => %<key>s, %%<key?>s => %<key?>s
-        /(\A|[[:space:]])\%\%\<([a-zA-Z_]+\??)\>s(\Z|[[:space:]])/,
-        '\1%<\2>s\3'
+        # %%<key>s => %<key>s, %%<key?>s => %<key?>s (escaping)
+        /(\A|[[:space:]])(\%+)\%\<([a-zA-Z_]+\??)\>s(\Z|[[:space:]])/,
+        '\1\2<\3>s\4'
       )
   end
 
