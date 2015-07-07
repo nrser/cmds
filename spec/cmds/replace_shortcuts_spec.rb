@@ -20,23 +20,31 @@ describe 'Cmds::replace_shortcuts' do
     expect_to_replace "%%s", "%s"
   end
 
+it "should replace %%%s with %%s (escaping)" do
+    expect_to_replace "%%%s", "%%s"
+  end
+
   it "should replace %{key} with <%= key %>" do
     expect_to_replace "%{key}", "<%= key %>"
   end
 
-  it "should reaplce %%{key} with %{key} (escaping)" do
+  it "should replace %%{key} with %{key} (escaping)" do
     expect_to_replace '%%{key}', '%{key}'
+  end
+
+  it "should replace %%%{key} with %%{key} (escaping)" do
+    expect_to_replace '%%%{key}', '%%{key}'
   end
 
   it "should replace %{key?} with <%= key? %>" do
     expect_to_replace "%{key?}", "<%= key? %>"
   end
 
-  it "should reaplce %%{key?} with %{key?} (escaping)" do
+  it "should replace %%{key?} with %{key?} (escaping)" do
     expect_to_replace '%%{key?}', '%{key?}'
   end
 
-  it "should reaplce %%%{key?} with %%{key?} (escaping)" do
+  it "should replace %%%{key?} with %%{key?} (escaping)" do
     expect_to_replace '%%%{key?}', '%%{key?}'
   end
 
@@ -44,11 +52,27 @@ describe 'Cmds::replace_shortcuts' do
     expect_to_replace "%<key>s", "<%= key %>"
   end
 
-  it "should replace %%<key>s with %<key>s" do
+  it "should replace %%<key>s with %<key>s (escaping)" do
     expect_to_replace "%%<key>s", "%<key>s"
+  end
+
+  it "should replace %%%<key>s with %%<key>s (escaping)" do
+    expect_to_replace "%%%<key>s", "%%<key>s"
   end
 
   it "should replace %<key?>s with <%= key? %>" do
     expect_to_replace '%<key?>s', '<%= key? %>'
+  end
+
+  it "should replace %%<key?>s with %<key?>s (escaping)" do
+    expect_to_replace '%%<key?>s', '%<key?>s'
+  end
+
+  it "should replace %%%<key?>s with %%<key?>s (escaping)" do
+    expect_to_replace '%%%<key?>s', '%%<key?>s'
+  end
+
+  it "should not touch % that don't fit the shortcut sytax" do
+    expect( Cmds.replace_shortcuts "50%" ).to eq "50%"
   end
 end

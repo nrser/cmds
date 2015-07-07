@@ -193,7 +193,10 @@ class Cmds
     raise TypeError.new("args must be an Array") unless args.is_a? Array
     raise TypeError.new("kwds must be an Hash") unless kwds.is_a? Hash
 
-    NRSER.squish ShellEruby.new(cmd).result(ERBContext.new(args, kwds).get_binding)
+    context = ERBContext.new(args, kwds)
+    erb = ShellEruby.new(replace_shortcuts cmd)
+
+    NRSER.squish erb.result(context.get_binding)
   end # ::sub
 
   def self.subs_to_args_and_kwds subs
@@ -253,9 +256,9 @@ class Cmds
         '\1<%= arg %>\2'
       )
       .gsub(
-        # %%s => %s
-        /(\A|[[:space:]])\%\%s(\Z|[[:space:]])/,
-        '\1%s\2'
+        # %%s => %s (escpaing)
+        /(\A|[[:space:]])(\%+)\%s(\Z|[[:space:]])/,
+        '\1\2s\3'
       )
       .gsub(
         # %{key} => <%= key %>, %{key?} => <%= key? %>
@@ -263,9 +266,9 @@ class Cmds
         '\1<%= \2 %>\3'
       )
       .gsub(
-        # %%{key} => %{key}, %%{key?} => %{key?}
-        /(\A|[[:space:]])\%\%\{([a-zA-Z_]+\??)\}(\Z|[[:space:]])/,
-        '\1%{\2}\3'
+        # %%{key} => %{key}, %%{key?} => %{key?} (escpaing)
+        /(\A|[[:space:]])(\%+)\%\{([a-zA-Z_]+\??)\}(\Z|[[:space:]])/,
+        '\1\2{\3}\4'
       )
       .gsub(
         # %<key>s => <%= key %>, %<key?>s => <%= key? %>
@@ -273,9 +276,9 @@ class Cmds
         '\1<%= \2 %>\3'
       )
       .gsub(
-        # %%<key>s => %<key>s, %%<key?>s => %<key?>s
-        /(\A|[[:space:]])\%\%\<([a-zA-Z_]+\??)\>s(\Z|[[:space:]])/,
-        '\1%<\2>s\3'
+        # %%<key>s => %<key>s, %%<key?>s => %<key?>s (escaping)
+        /(\A|[[:space:]])(\%+)\%\<([a-zA-Z_]+\??)\>s(\Z|[[:space:]])/,
+        '\1\2<\3>s\4'
       )
   end
 
