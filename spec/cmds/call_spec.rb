@@ -13,4 +13,15 @@ describe "Cmds::call" do
       end
     end
   end # is reusable
-end # Cmds::run
+
+  it "accepts input" do
+    input = <<-BLOCK
+    one
+    two
+    three
+    four!
+    BLOCK
+
+    expect( Cmds.new("wc -l", input: input).call.out ).to match /^\s+4$/
+  end
+end # Cmds::call

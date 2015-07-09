@@ -27,6 +27,18 @@ class Cmds
     def error?
       ! ok?
     end
+
+    # raises an error if there was one
+    def raise_error
+      if error?
+        msg = NRSER.squish <<-BLOCK
+          command `#{ @cmd }` exited with status #{ @status }
+          and stderr output #{ err.inspect }
+        BLOCK
+
+        raise SystemCallError.new msg, @status
+      end
+    end
   end
 
   # extension of Erubis' EscapedEruby (which auto-escapes `<%= %>` and
@@ -264,7 +276,7 @@ class Cmds
     self.new(template, args: args, kwds: kwds, input: input).error?
   end
 
-  def self.raise_on_error
+  def self.raise_on_error template, *subs
     args, kwds, input = subs_to_args_kwds_input subs
     self.new(
       template,
@@ -331,9 +343,11 @@ class Cmds
       Open3.capture3 cmd, stdin_data: input
     end
 
-    result = Cmds::Result.new cmd, status, out, err
+    result = Cmds::Result.new cmd, status.exitstatus, out, err
 
-    # raise an error if raiseOnInput 
+    result.raise_error if @raise_on_error
+
+    return result
   end #call
 
   # returns a new `Cmds` with the subs merged in
