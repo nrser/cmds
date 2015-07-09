@@ -199,14 +199,17 @@ class Cmds
     NRSER.squish erb.result(context.get_binding)
   end # ::sub
 
-  def self.subs_to_args_and_kwds subs
+  def self.subs_to_args_kwds_input subs
     args = []
     kwds = {}
+    input = nil
 
     case subs.length
     when 0
-      # pass
+      # nothing to do
     when 1
+      # can either be a hash, which is interpreted as a keywords,
+      # or an array, which is interpreted as positional arguments
       case subs[0]
       when Hash
         kwds = subs[0]
@@ -220,7 +223,9 @@ class Cmds
         BLOCK
       end
 
-    when 2
+    when 2, 3
+      # first arg needs to be an array, second a hash, and optional third
+      # can be input
       unless subs[0].is_a? Array
         raise TypeError.new NRSER.squish <<-BLOCK
           first *subs arg needs to be an array, not #{ subs[0].inspect }
@@ -229,23 +234,45 @@ class Cmds
 
       unless subs[1].is_a? Hash
         raise TypeError.new NRSER.squish <<-BLOCK
-          third *subs arg needs to be a Hash, not #{ subs[1].inspect }
+          second *subs arg needs to be a Hash, not #{ subs[1].inspect }
         BLOCK
       end
 
-      args, kwds = subs
+      args, kwds, input = subs
     else
       raise ArgumentError.new NRSER.squish <<-BLOCK
         must provide one or two *subs arguments, received #{ 1 + subs.length }
       BLOCK
     end
 
-    [args, kwds]
+    [args, kwds, input]
   end
 
   # create a new Cmd from template and subs and call it
   def self.run template, *subs
-    self.new(template, *subs).call
+    args, kwds, input = subs_to_args_kwds_input subs
+    self.new(template, args: args, kwds: kwds, input: input).call
+  end
+
+  def self.ok? template, *subs
+    args, kwds, input = subs_to_args_kwds_input subs
+    self.new(template, args: args, kwds: kwds, input: input).ok?
+  end
+
+  def self.error? template, *subs
+    args, kwds, input = subs_to_args_kwds_input subs
+    self.new(template, args: args, kwds: kwds, input: input).error?
+  end
+
+  def self.raise_on_error
+    args, kwds, input = subs_to_args_kwds_input subs
+    self.new(
+      template,
+      args: args,
+      kwds: kwds,
+      input: input,
+      raise_on_error: true
+    ).call
   end
 
   def self.replace_shortcuts template
@@ -282,35 +309,57 @@ class Cmds
       )
   end
 
-  attr_reader :tempalte, :args, :kwds
+  attr_reader :tempalte, :args, :kwds, :input, :raise_on_error
 
-  def initialize template, *subs
+  def initialize template, opts = {}
     @template = template
-    @args, @kwds = Cmds.subs_to_args_and_kwds subs
+    @args = opts[:args] || []
+    @kwds = opts[:kwds] || {}
+    @input = opts[:input] || nil
+    @raise_on_error = opts[:raise_on_error] || false
   end #initialize
 
   def call *subs
-    args, kwds = merge_subs subs
+    # merge any stored args and kwds and get any overriding input
+    args, kwds, input = merge_subs subs
 
     cmd = Cmds.sub @template, args, kwds
 
-    out, err, status = Open3.capture3 cmd
+    out, err, status = if input.nil?
+      Open3.capture3 cmd
+    else
+      Open3.capture3 cmd, stdin_data: input
+    end
 
-    Cmds::Result.new cmd, status, out, err
+    result = Cmds::Result.new cmd, status, out, err
+
+    # raise an error if raiseOnInput 
   end #call
 
   # returns a new `Cmds` with the subs merged in
   def curry *subs
-    self.class.new @template, *merge_subs(subs)
+    args, kwds, input = merge_subs(subs)
+    self.class.new @template, args: args, kwds: kwds, input: input
+  end
+
+  def ok?
+    call.ok?
+  end
+
+  def error?
+    call.error?
   end
 
   private
 
     def merge_subs subs
       # break `subs` into `args` and `kwds`
-      args, kwds = Cmds.subs_to_args_and_kwds subs
+      args, kwds, input = Cmds.subs_to_args_kwds_input subs
 
-      [@args + args, @kwds.merge(kwds)]
+      # use any default input if we didn't get a new one
+      input = @input if input.nil?
+
+      [@args + args, @kwds.merge(kwds), input]
     end #merge_subs
 
   # end private
@@ -319,4 +368,12 @@ end # Cmds
 # convenience for Cmds::run
 def Cmds *args
   Cmds.run *args
+end
+
+def Cmds? *args
+  Cmds.ok? *args
+end
+
+def Cmds! *args
+  Cmds.raise_on_error *args
 end
