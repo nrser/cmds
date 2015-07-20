@@ -10,6 +10,9 @@ require 'nrser'
 require "cmds/version"
 
 class Cmds
+  # subclasses
+  # ==========
+
   class Result
     attr_reader :cmd, :status, :out, :err
 
@@ -29,6 +32,7 @@ class Cmds
     end
 
     # raises an error if there was one
+    # returns the Result so that it can be chained
     def raise_error
       if error?
         msg = NRSER.squish <<-BLOCK
@@ -38,7 +42,8 @@ class Cmds
 
         raise SystemCallError.new msg, @status
       end
-    end
+      self
+    end # raise_error
   end
 
   # extension of Erubis' EscapedEruby (which auto-escapes `<%= %>` and
@@ -76,7 +81,70 @@ class Cmds
     def arg
       @args.fetch(@arg_index).tap {@arg_index += 1}
     end
-  end
+  end # end ERBContext
+
+  class IOHandler
+    attr_reader :input, :out, :err
+
+    def initialize
+      @out = $stdout
+      @err = $stderr
+      @input = nil
+    end
+
+    def input &block
+      @input = block
+    end
+
+    def out &block
+      @out = block
+    end
+
+    def out= io
+      unless io.is_a? IO
+        raise ArgumentError.new NRSER.squish <<-BLOCK
+          out must be set to an IO, not #{ io.inspect }
+        BLOCK
+      end
+      @out = io
+    end
+
+    def out_line line
+      handle_line @out, line
+    end
+
+    def err &block
+      @err = block
+    end
+
+    def err= io
+      unless io.is_a? IO
+        raise ArgumentError.new NRSER.squish <<-BLOCK
+          err must be set to an IO, not #{ io.inspect }
+        BLOCK
+      end
+      @err = io
+    end
+
+    def err_line line
+      handle_line @err, line
+    end
+
+    private
+
+      def handle_line dest, line
+        if dest.is_a? IO
+          dest.puts line
+        else
+          dest.call line
+        end
+      end
+
+    # end private
+  end # end IOHandler
+
+  # class methods
+  # =============
 
   # shortcut for Shellwords.escape
   # 
@@ -319,7 +387,11 @@ class Cmds
         /(\A|[[:space:]])(\%+)\%\<([a-zA-Z_]+\??)\>s(\Z|[[:space:]])/,
         '\1\2<\3>s\4'
       )
-  end
+  end # ::replace_shortcuts
+
+  def self.stream! template, *subs
+    Cmds.new(template, raise_on_error: true).curry(*subs).stream
+  end # ::stream!
 
   attr_reader :tempalte, :args, :kwds, :input, :raise_on_error
 
@@ -335,7 +407,7 @@ class Cmds
     # merge any stored args and kwds and get any overriding input
     args, kwds, input = merge_subs subs
 
-    cmd = Cmds.sub @template, args, kwds
+    cmd = self.cmd *subs
 
     out, err, status = if input.nil?
       Open3.capture3 cmd
@@ -350,6 +422,13 @@ class Cmds
     return result
   end #call
 
+  # get the command with values substituted in
+  def cmd *subs
+    # merge any stored args and kwds and get any overriding input
+    args, kwds, input = merge_subs subs
+    Cmds.sub @template, args, kwds
+  end
+
   # returns a new `Cmds` with the subs merged in
   def curry *subs
     args, kwds, input = merge_subs(subs)
@@ -363,6 +442,60 @@ class Cmds
   def error?
     call.error?
   end
+
+  def raise_on_error
+    call.raise_error
+  end
+
+  # inspired by
+  # 
+  # https://nickcharlton.net/posts/ruby-subprocesses-with-stdout-stderr-streams.html
+  # 
+  def stream *subs, &block
+    handler = IOHandler.new
+
+    if block
+      input = block.call handler
+      unless input.nil? || handler.input.nil?
+        raise ArgumentError.new NRSER.squish <<-BLOCK
+          block returned a value considered input and set a handler for
+          input; pick one or the other.
+        BLOCK
+      end
+    end
+
+    # see: http://stackoverflow.com/a/1162850/83386
+    status = Open3.popen3(cmd *subs) do |stdin, stdout, stderr, thread|
+      # read each stream from a new thread
+      { :out => stdout, :err => stderr }.each do |key, stream|
+        Thread.new do
+          until (line = stream.gets).nil? do
+            # yield the block depending on the stream
+            if key == :out
+              handler.out_line line
+            else
+              handler.err_line line
+            end
+          end
+        end
+      end
+
+      thread.join # don't exit until the external process is done
+
+      # this should be the exit status?
+      thread.value.exitstatus
+    end
+
+    if @raise_on_error && status != 0
+      msg = NRSER.squish <<-BLOCK
+        streamed command `#{ @cmd }` exited with status #{ status }
+      BLOCK
+
+      raise SystemCallError.new msg, status
+    end
+
+    return status
+  end #stream
 
   private
 
