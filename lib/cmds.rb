@@ -2,6 +2,7 @@
 require 'shellwords'
 require 'open3'
 require 'erubis'
+require 'thread'
 
 # deps
 require 'nrser'
@@ -87,8 +88,14 @@ class Cmds
     attr_reader :input, :out, :err
 
     def initialize
+      @queue = Queue.new
+
       @out = $stdout
+      @out_closed = false
+
       @err = $stderr
+      @err_closed = false
+
       @input = nil
     end
 
@@ -109,8 +116,9 @@ class Cmds
       @out = io
     end
 
-    def out_line line
-      handle_line @out, line
+    # called in seperate thread handling process IO
+    def send_out line
+      @queue << [:out, line]
     end
 
     def err &block
@@ -126,9 +134,37 @@ class Cmds
       @err = io
     end
 
-    def err_line line
-      handle_line @err, line
+    # called in seperate thread handling process IO
+    def send_err line
+      @queue << [:err, line]
     end
+
+    def start
+      loop do
+        key, line = @queue.pop
+        
+        case key
+        when :out
+          if line.nil?
+            @out_closed = true
+          else
+            handle_line @out, line
+          end
+
+        when :err
+          if line.nil?
+            @err_closed = true
+          else
+            handle_line @err, line
+          end
+
+        else
+          raise "bad key: #{ key.inspect }"
+        end
+
+        break if @out_closed && @err_closed
+      end
+    end #start
 
     private
 
@@ -471,18 +507,21 @@ class Cmds
     # see: http://stackoverflow.com/a/1162850/83386
     status = Open3.popen3(cmd *subs) do |stdin, stdout, stderr, thread|
       # read each stream from a new thread
-      { :out => stdout, :err => stderr }.each do |key, stream|
+      {
+        stdout => handler.method(:send_out),
+        stderr => handler.method(:send_err),
+      }.each do |stream, meth|
         Thread.new do
-          until (line = stream.gets).nil? do
-            # yield the block depending on the stream
-            if key == :out
-              handler.out_line line
-            else
-              handler.err_line line
-            end
+          loop do
+            line = stream.gets
+            meth.call line
+            break if line.nil?
           end
-        end
+        end # Thread
       end
+
+      # start the handler
+      handler.start
 
       thread.join # don't exit until the external process is done
 

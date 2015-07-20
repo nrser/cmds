@@ -15,9 +15,6 @@ describe "Cmds::stream" do
     err = StringIO.new
     err_count = 0
     Cmds.stream './test/tick.rb <%= times %>', times: times do |on|
-      # right now this does NOT happen in the main thread
-      # TODO: it should, the other threads should just pass shit back to
-      # the main one
       on.out do |line|
         out_count += 1
       end
