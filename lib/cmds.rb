@@ -133,10 +133,10 @@ class Cmds
     private
 
       def handle_line dest, line
-        if dest.is_a? IO
-          dest.puts line
-        else
+        if dest.is_a? Proc
           dest.call line
+        else
+          dest.puts line
         end
       end
 
@@ -389,8 +389,12 @@ class Cmds
       )
   end # ::replace_shortcuts
 
-  def self.stream! template, *subs
-    Cmds.new(template, raise_on_error: true).curry(*subs).stream
+  def self.stream template, *subs, &block
+    Cmds.new(template).stream *subs, &block
+  end
+
+  def self.stream! template, *subs, &block
+    Cmds.new(template, raise_on_error: true).stream *subs, &block
   end # ::stream!
 
   attr_reader :tempalte, :args, :kwds, :input, :raise_on_error
