@@ -99,11 +99,11 @@ class Cmds
       @input = nil
     end
 
-    def input &block
+    def on_in &block
       @input = block
     end
 
-    def out &block
+    def on_out &block
       @out = block
     end
 
@@ -121,7 +121,7 @@ class Cmds
       @queue << [:out, line]
     end
 
-    def err &block
+    def on_err &block
       @err = block
     end
 
@@ -315,10 +315,10 @@ class Cmds
     NRSER.squish erb.result(context.get_binding)
   end # ::sub
 
-  def self.subs_to_args_kwds_input subs
+  def self.options subs, input_block
     args = []
     kwds = {}
-    input = nil
+    input = input_block.nil? ? nil : input_block.call
 
     case subs.length
     when 0
@@ -339,9 +339,8 @@ class Cmds
         BLOCK
       end
 
-    when 2, 3
-      # first arg needs to be an array, second a hash, and optional third
-      # can be input
+    when 2
+      # first arg needs to be an array, second a hash
       unless subs[0].is_a? Array
         raise TypeError.new NRSER.squish <<-BLOCK
           first *subs arg needs to be an array, not #{ subs[0].inspect }
@@ -354,40 +353,37 @@ class Cmds
         BLOCK
       end
 
-      args, kwds, input = subs
+      args, kwds = subs
     else
       raise ArgumentError.new NRSER.squish <<-BLOCK
         must provide one or two *subs arguments, received #{ 1 + subs.length }
       BLOCK
     end
 
-    [args, kwds, input]
-  end
-
-  # create a new Cmd from template and subs and call it
-  def self.run template, *subs
-    args, kwds, input = subs_to_args_kwds_input subs
-    self.new(template, args: args, kwds: kwds, input: input).call
-  end
-
-  def self.ok? template, *subs
-    args, kwds, input = subs_to_args_kwds_input subs
-    self.new(template, args: args, kwds: kwds, input: input).ok?
-  end
-
-  def self.error? template, *subs
-    args, kwds, input = subs_to_args_kwds_input subs
-    self.new(template, args: args, kwds: kwds, input: input).error?
-  end
-
-  def self.raise_on_error template, *subs
-    args, kwds, input = subs_to_args_kwds_input subs
-    self.new(
-      template,
+    return {
       args: args,
       kwds: kwds,
       input: input,
-      raise_on_error: true
+    }
+  end
+
+  # create a new Cmd from template and subs and call it
+  def self.run template, *subs, &input_block
+    new(template, options(subs, input_block)).call
+  end
+
+  def self.ok? template, *subs, &input_block
+    new(template, options(subs, input_block)).ok?
+  end
+
+  def self.error? template, *subs, &input_block
+    new(template, options(subs, input_block)).error?
+  end
+
+  def self.assert template, *subs, &input_block
+    new(
+      template,
+      options(subs, input_block).merge!(assert: true)
     ).call
   end
 
@@ -425,77 +421,64 @@ class Cmds
       )
   end # ::replace_shortcuts
 
-  def self.stream template, *subs, &block
-    Cmds.new(template).stream *subs, &block
+  def self.stream template, *subs, &input_block
+    Cmds.new(template).stream *subs, &input_block
   end
 
-  def self.stream! template, *subs, &block
-    Cmds.new(template, raise_on_error: true).stream *subs, &block
+  def self.stream! template, *subs, &input_block
+    Cmds.new(template, assert: true).stream *subs, &input_block
   end # ::stream!
 
-  attr_reader :tempalte, :args, :kwds, :input, :raise_on_error
+  attr_reader :tempalte, :args, :kwds, :input, :assert
 
   def initialize template, opts = {}
     @template = template
     @args = opts[:args] || []
     @kwds = opts[:kwds] || {}
     @input = opts[:input] || nil
-    @raise_on_error = opts[:raise_on_error] || false
+    @assert = opts[:assert] || false
   end #initialize
 
-  def call *subs
-    # merge any stored args and kwds and get any overriding input
-    args, kwds, input = merge_subs subs
+  # invokes the command and returns a Result
+  def call *subs, &input_block
+    # merge any stored args and kwds and replace input if provided
+    options = merge_options subs, input_block
 
-    cmd = self.cmd *subs
+    # build the command string
+    cmd = Cmds.sub @template, options[:args], options[:kwds]
 
-    out, err, status = if input.nil?
+    # make the call with input if provided
+    out, err, status = if options[:input].nil?
       Open3.capture3 cmd
     else
-      Open3.capture3 cmd, stdin_data: input
+      Open3.capture3 cmd, stdin_data: options[:input]
     end
 
+    # build a Result
     result = Cmds::Result.new cmd, status.exitstatus, out, err
 
-    result.raise_error if @raise_on_error
+    result.raise_error if @assert
 
     return result
   end #call
-
-  # get the command with values substituted in
-  def cmd *subs
-    # merge any stored args and kwds and get any overriding input
-    args, kwds, input = merge_subs subs
-    Cmds.sub @template, args, kwds
-  end
-
-  # returns a new `Cmds` with the subs merged in
-  def curry *subs
-    args, kwds, input = merge_subs(subs)
-    self.class.new @template, args: args, kwds: kwds, input: input
-  end
-
-  def ok?
-    call.ok?
-  end
-
-  def error?
-    call.error?
-  end
-
-  def raise_on_error
-    call.raise_error
-  end
 
   # inspired by
   # 
   # https://nickcharlton.net/posts/ruby-subprocesses-with-stdout-stderr-streams.html
   # 
-  def stream *subs, &block
+  def stream *subs, &input_block
+    # use `merge_options` to get the args and kwds (we will take custom
+    # care of input below)
+    options = merge_options subs, nil
+
+    # create the handler that will be yielded to the input block
     handler = IOHandler.new
 
-    if block
-      input = block.call handler
+    # handle input
+    # 
+    # 
+    if input_block
+      input = input_block.call handler
       unless input.nil? || handler.input.nil?
         raise ArgumentError.new NRSER.squish <<-BLOCK
           block returned a value considered input and set a handler for
@@ -504,8 +487,11 @@ class Cmds
       end
     end
 
+    # build the command string
+    cmd = Cmds.sub @template, options[:args], options[:kwds]
+
     # see: http://stackoverflow.com/a/1162850/83386
-    status = Open3.popen3(cmd *subs) do |stdin, stdout, stderr, thread|
+    status = Open3.popen3(cmd) do |stdin, stdout, stderr, thread|
       # read each stream from a new thread
       {
         stdout => handler.method(:send_out),
@@ -529,7 +515,7 @@ class Cmds
       thread.value.exitstatus
     end
 
-    if @raise_on_error && status != 0
+    if @assert && status != 0
       msg = NRSER.squish <<-BLOCK
         streamed command `#{ @cmd }` exited with status #{ status }
       BLOCK
@@ -540,17 +526,42 @@ class Cmds
     return status
   end #stream
 
+  # returns a new `Cmds` with the subs merged in
+  def curry *subs, &input_block
+    self.class.new @template, merge_options(subs, input_block)
+  end
+
+  def ok?
+    call.ok?
+  end
+
+  def error?
+    call.error?
+  end
+
+  def assert
+    call.raise_error
+  end
+
   private
 
-    def merge_subs subs
-      # break `subs` into `args` and `kwds`
-      args, kwds, input = Cmds.subs_to_args_kwds_input subs
-
-      # use any default input if we didn't get a new one
-      input = @input if input.nil?
-
-      [@args + args, @kwds.merge(kwds), input]
-    end #merge_subs
+    # merges options already present on the object with options
+    # provided via subs and input_block and returns a new options
+    # Hash
+    def merge_options subs, input_block
+      # get the options present in the arguments
+      options = Cmds.options subs, input_block
+      # the new args are created by appending the provided args to the
+      # existing ones
+      options[:args] = @args + options[:args]
+      # the new kwds are created by merging the provided kwds into the
+      # exising ones (new values override previous)
+      options[:kwds] = @kwds.merge options[:kwds]
+      # if there is input present via the provided block, it is used.
+      # otherwise, previous input is used, which may be `nil`
+      options[:input] ||= @input
+      return options
+    end
 
   # end private
 end # Cmds
@@ -565,5 +576,5 @@ def Cmds? *args
 end
 
 def Cmds! *args
-  Cmds.raise_on_error *args
+  Cmds.assert *args
 end

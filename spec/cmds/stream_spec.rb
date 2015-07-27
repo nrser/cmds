@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe "Cmds::stream" do
-  times = 5
+  let(:times) { 5 }
 
   it "writes to $stdout and $stderr by default" do
     expect {
@@ -14,12 +14,12 @@ describe "Cmds::stream" do
     out_count = 0
     err = StringIO.new
     err_count = 0
-    Cmds.stream './test/tick.rb <%= times %>', times: times do |on|
-      on.out do |line|
+    Cmds.stream './test/tick.rb <%= times %>', times: times do |io|
+      io.on_out do |line|
         out_count += 1
       end
 
-      on.err do |line|
+      io.on_err do |line|
         err_count += 1
       end
     end

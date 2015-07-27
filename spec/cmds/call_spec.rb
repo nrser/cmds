@@ -14,14 +14,28 @@ describe "Cmds::call" do
     end
   end # is reusable
 
-  it "accepts input" do
-    input = <<-BLOCK
-    one
-    two
-    three
-    four!
-    BLOCK
+  context "input" do
+    let(:input) {
+      <<-BLOCK
+        one
+        two
+        three
+        four!
+      BLOCK
+    }
 
-    expect( Cmds.new("wc -l", input: input).call.out ).to match /^\s+4$/
-  end
+    it "accepts input via options" do
+      expect( Cmds.new("wc -l", input: input).call.out ).to match /^\s+4$/
+    end
+
+    it "accepts input via block" do
+      cmds = Cmds.new("wc -l")
+      expect(cmds).to be_instance_of Cmds
+      expect(cmds).to respond_to :call
+
+      result = cmds.call { input }
+      expect(result).to be_instance_of Cmds::Result
+      expect(result.out).to match /^\s+4$/
+    end
+  end # context input
 end # Cmds::call
