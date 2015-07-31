@@ -3,6 +3,7 @@ require 'shellwords'
 require 'open3'
 require 'erubis'
 require 'thread'
+require 'logger'
 
 # deps
 require 'nrser'
@@ -11,6 +12,9 @@ require 'nrser'
 require "cmds/version"
 
 class Cmds
+  # class variables
+  @@logger = nil
+
   # subclasses
   # ==========
 
@@ -85,7 +89,7 @@ class Cmds
   end # end ERBContext
 
   class IOHandler
-    attr_reader :input, :out, :err
+    attr_reader :out, :err
 
     def initialize
       @queue = Queue.new
@@ -95,12 +99,6 @@ class Cmds
 
       @err = $stderr
       @err_closed = false
-
-      @input = nil
-    end
-
-    def on_in &block
-      @input = block
     end
 
     def on_out &block
@@ -117,7 +115,7 @@ class Cmds
     end
 
     # called in seperate thread handling process IO
-    def send_out line
+    def thread_send_out line
       @queue << [:out, line]
     end
 
@@ -135,7 +133,7 @@ class Cmds
     end
 
     # called in seperate thread handling process IO
-    def send_err line
+    def thread_send_err line
       @queue << [:err, line]
     end
 
@@ -181,6 +179,23 @@ class Cmds
 
   # class methods
   # =============
+
+  def self.configure_logger dest = $stdout
+    @@logger = Logger.new dest
+    @@logger.level = Logger::DEBUG
+    @@logger.formatter = proc do |severity, datetime, progname, msg|
+      if Thread.current[:name]
+        "[Cmds #{ severity } - #{ Thread.current[:name ] }] #{msg}\n"
+      else
+        "[Cmds #{ severity }] #{msg}\n"
+      end
+    end
+  end
+
+  # log debug stuff
+  def self.debug *args
+    @@logger.debug *args if @@logger
+  end
 
   # shortcut for Shellwords.escape
   # 
@@ -476,16 +491,17 @@ class Cmds
 
     # handle input
     # 
-    # 
+    # default to the instance variable
+    input = @input
+
     if input_block
-      input = input_block.call handler
-      unless input.nil? || handler.input.nil?
-        raise ArgumentError.new NRSER.squish <<-BLOCK
-          block returned a value considered input and set a handler for
-          input; pick one or the other.
-        BLOCK
-      end
-    end
+      # invoke the input block on the handler
+      # if it returns a non-nil value, that will override the input
+      input_block_value = input_block.call handler
+
+      # conditionally override the input
+      input = input_block_value unless input_block_value.nil?
+    end # if input_block
 
     # build the command string
     cmd = Cmds.sub @template, options[:args], options[:kwds]
@@ -494,19 +510,53 @@ class Cmds
     status = Open3.popen3(cmd) do |stdin, stdout, stderr, thread|
       # read each stream from a new thread
       {
-        stdout => handler.method(:send_out),
-        stderr => handler.method(:send_err),
-      }.each do |stream, meth|
+        stdout => ["OUT", handler.method(:thread_send_out)],
+        stderr => ["ERR", handler.method(:thread_send_err)],
+      }.each do |stream, (name, meth)|
         Thread.new do
+          Thread.current[:name] = name
+          Cmds.debug "thread started"
+
           loop do
+            Cmds.debug "blocking on gets..."
             line = stream.gets
+            if line.nil?
+              Cmds.debug "received nil, output done."
+            else
+              Cmds.debug NRSER.squish <<-BLOCK
+                received #{ line.bytesize } bytes, passing to handler.
+              BLOCK
+            end
             meth.call line
             break if line.nil?
           end
         end # Thread
       end
 
+      if input
+        Cmds.debug "input present, starting input thread"
+        Thread.new do
+          Thread.current[:name] = "INPUT"
+          Cmds.debug "thread started"
+
+          written = 0
+          loop do
+            Cmds.debug "blocking on write..."
+            written = stdin.write input
+            Cmds.debug "wrote #{ written } bytes to stdin."
+
+            input = input.byteslice(written..-1)
+            if input.empty?
+              Cmds.debug "write completed."
+              stdin.close
+              break
+            end
+          end
+        end # Thread
+      end
+
       # start the handler
+      Cmds.debug "starting handler..."
       handler.start
 
       thread.join # don't exit until the external process is done

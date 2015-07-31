@@ -9,10 +9,8 @@ describe "Cmds::stream" do
     }.to output(times.times.map{|_| "#{_}\n"}.join).to_stdout
   end
 
-  it "writes to blocks" do
-    out = StringIO.new
+  it "handles writes in blocks" do
     out_count = 0
-    err = StringIO.new
     err_count = 0
     Cmds.stream './test/tick.rb <%= times %>', times: times do |io|
       io.on_out do |line|
@@ -25,5 +23,19 @@ describe "Cmds::stream" do
     end
     expect(out_count).to eq times
     expect(err_count).to eq 0
+  end
+
+  context "input" do
+    it "accepts value input from as a block" do
+      expect {
+        Cmds.stream "wc -l" do
+          <<-BLOCK
+            one
+            two
+            three
+          BLOCK
+        end
+      }.to output(/^\s+3\n/).to_stdout
+    end
   end
 end # Cmds::stream
