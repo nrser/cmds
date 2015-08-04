@@ -12,6 +12,13 @@ require 'nrser'
 require "cmds/version"
 
 class Cmds
+  # constants
+  THREAD_DEBUG_COLORS = {
+    'INPUT' => :cyan,
+    'OUTPUT' => :green,
+    'ERROR' => :red,
+  }
+
   # class variables
   @@logger = nil
 
@@ -181,11 +188,20 @@ class Cmds
   # =============
 
   def self.configure_logger dest = $stdout
+    require 'pastel'
+    @@pastel = Pastel.new
+
     @@logger = Logger.new dest
     @@logger.level = Logger::DEBUG
     @@logger.formatter = proc do |severity, datetime, progname, msg|
       if Thread.current[:name]
-        "[Cmds #{ severity } - #{ Thread.current[:name ] }] #{msg}\n"
+        msg = "[Cmds #{ severity } - #{ Thread.current[:name ] }] #{msg}\n"
+
+        if color = Cmds::THREAD_DEBUG_COLORS[Thread.current[:name]]
+          msg = @@pastel.method(color).call msg
+        end
+
+        msg
       else
         "[Cmds #{ severity }] #{msg}\n"
       end
@@ -503,7 +519,7 @@ class Cmds
         }
 
       end # if input is a String
-    end
+    end # if input
 
     # build a Result
     result = Cmds::Result.new cmd, status.exitstatus, out, err
@@ -546,8 +562,8 @@ class Cmds
     status = Open3.popen3(cmd) do |stdin, stdout, stderr, thread|
       # read each stream from a new thread
       {
-        stdout => ["OUT", handler.method(:thread_send_out)],
-        stderr => ["ERR", handler.method(:thread_send_err)],
+        stdout => ["OUTPUT", handler.method(:thread_send_out)],
+        stderr => ["ERROR", handler.method(:thread_send_err)],
       }.each do |stream, (name, meth)|
         Thread.new do
           Thread.current[:name] = name
@@ -576,24 +592,17 @@ class Cmds
           Cmds.debug "thread started"
 
           if input.is_a? String
-            written = 0
-            loop do
-              Cmds.debug "blocking on write..."
-              written = stdin.write input
-              Cmds.debug "wrote #{ written } bytes to stdin."
-
-              input = input.byteslice(written..-1)
-              if input.empty?
-                Cmds.debug "write completed."
-                stdin.close
-                break
-              end
-            end
+            stdin.write input
           else
-            Cmds.debug "input is not a string, so it should be IO-like"
-
+            Cmds.debug "input is not a string, so it should be IO-like",
+              input: input
+            
             stdin.write input.read
+            Cmds.debug "write done"
           end
+
+          Cmds.debug "closing stdin"
+          stdin.close
         end # Thread
       end
 

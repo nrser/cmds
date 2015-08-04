@@ -38,6 +38,12 @@ describe "Cmds::stream" do
       }.to output(/^\s+3\n/).to_stdout
     end
 
-    it "accepts "
+    it "accepts stream input from a block" do
+      expect {
+        Cmds.stream "wc -l" do
+          File.open "./test/lines.txt"
+        end
+      }.to output(/^\s+3\n/).to_stdout
+    end
   end
 end # Cmds::stream

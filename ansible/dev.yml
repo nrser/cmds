@@ -10,6 +10,11 @@
         version:  master
         dir_name: rails
 
+      - owner:    ruby
+        name:     ruby
+        version:  v2_2_2
+        dir_name: ruby-v2_2_2
+
   tasks:
 
   - name: install gems

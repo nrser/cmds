@@ -11,4 +11,5 @@ qs = [
 qs.each do |q|
   puts q
   response = gets
+  $stderr.puts "response: #{ response.inspect }"
 end

@@ -76,8 +76,8 @@ namespace :debug do
 
     desc "input io"
     task :io => :conf do
-      Cmds.stream "./test/questions.rb" do |io|
-        $stdin
+      File.open "./test/lines.txt" do |f|
+        Cmds.stream("wc -l") { f }
       end
     end
 
@@ -211,6 +211,16 @@ namespace :debug do
         thread.join
         # stdin_thread.kill
       end
+    end
+
+    desc "blah 2"
+    task :proxy => :conf do
+      input = File.open "./test/answers.txt"
+      pid = spawn "./test/questions.rb",  out: $stdout,
+                                          err: $stderr,
+                                          in: input
+      wait_thread = Process.detach pid
+      wait_thread.join
     end
 
     desc "blah"
