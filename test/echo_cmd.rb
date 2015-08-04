@@ -10,6 +10,7 @@ argv = ARGV.clone
 data = {
   '$0' => $0,
   'ARGV' => argv,
+  'stdin' => $stdin.read,
 }
 
 puts JSON.pretty_generate(data)

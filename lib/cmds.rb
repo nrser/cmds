@@ -193,8 +193,12 @@ class Cmds
   end
 
   # log debug stuff
-  def self.debug *args
-    @@logger.debug *args if @@logger
+  def self.debug msg, values = {}
+    return unless @@logger
+    unless values.empty?
+      msg += "\n" + values.map {|k, v| "  #{ k }: #{ v.inspect }" }.join("\n")
+    end
+    @@logger.debug msg
   end
 
   # shortcut for Shellwords.escape
@@ -384,6 +388,8 @@ class Cmds
 
   # create a new Cmd from template and subs and call it
   def self.run template, *subs, &input_block
+    Cmds.debug "running with",
+      input_block: input_block
     new(template, options(subs, input_block)).call
   end
 
@@ -447,6 +453,10 @@ class Cmds
   attr_reader :tempalte, :args, :kwds, :input, :assert
 
   def initialize template, opts = {}
+    Cmds.debug "Cmds constructed",
+      template: template,
+      options: opts
+
     @template = template
     @args = opts[:args] || []
     @kwds = opts[:kwds] || {}
@@ -462,11 +472,37 @@ class Cmds
     # build the command string
     cmd = Cmds.sub @template, options[:args], options[:kwds]
 
+    Cmds.debug "built command string: #{ cmd.inspect }"
+
     # make the call with input if provided
     out, err, status = if options[:input].nil?
+      Cmds.debug "no input present, using capture3."
       Open3.capture3 cmd
     else
-      Open3.capture3 cmd, stdin_data: options[:input]
+      Cmds.debug "input present."
+
+      if options[:input].is_a? String
+        Cmds.debug "input is a String, using capture3."
+        Open3.capture3 cmd, stdin_data: options[:input]
+
+      else
+        Cmds.debug "input is not a string, so it should be readable."
+        Cmds.debug "need to use threads..."
+
+        # from the capture3 implementation
+        Open3.popen3(cmd) {|stdin, stdout, stderr, thread|
+          out_reader = Thread.new { stdout.read }
+          err_reader = Thread.new { stderr.read }
+          begin
+            # TODO: this reads all as one chunk, might want to stream
+            stdin.write options[:input].read
+          rescue Errno::EPIPE
+          end
+          stdin.close
+          [out_reader.value, err_reader.value, thread.value]
+        }
+
+      end # if input is a String
     end
 
     # build a Result
@@ -555,6 +591,8 @@ class Cmds
             end
           else
             Cmds.debug "input is not a string, so it should be IO-like"
+
+            stdin.write input.read
           end
         end # Thread
       end
@@ -621,14 +659,14 @@ class Cmds
 end # Cmds
 
 # convenience for Cmds::run
-def Cmds *args
-  Cmds.run *args
+def Cmds *args, &block
+  Cmds.run *args, &block
 end
 
-def Cmds? *args
-  Cmds.ok? *args
+def Cmds? *args, &block
+  Cmds.ok? *args, &block
 end
 
-def Cmds! *args
-  Cmds.assert *args
+def Cmds! *args, &block
+  Cmds.assert *args, &block
 end

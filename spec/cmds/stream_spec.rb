@@ -26,7 +26,7 @@ describe "Cmds::stream" do
   end
 
   context "input" do
-    it "accepts value input from as a block" do
+    it "accepts value input from a block" do
       expect {
         Cmds.stream "wc -l" do
           <<-BLOCK
@@ -37,5 +37,7 @@ describe "Cmds::stream" do
         end
       }.to output(/^\s+3\n/).to_stdout
     end
+
+    it "accepts "
   end
 end # Cmds::stream

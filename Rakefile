@@ -1,5 +1,7 @@
 require 'thread'
 require 'pastel'
+require 'json'
+require 'pp'
 
 require "bundler/gem_tasks"
 
@@ -23,9 +25,9 @@ def configure_logger
 
   logger.formatter = proc do |severity, datetime, progname, msg|
     formatted = if Thread.current[:name]
-      "[#{ severity } - #{ Thread.current[:name ] }] #{msg}\n"
+      "[rake #{ severity } - #{ Thread.current[:name ] }] #{msg}\n"
     else
-      "[#{ severity }] #{msg}\n"
+      "[rake #{ severity }] #{msg}\n"
     end
 
     if severity == 'DEBUG'
@@ -44,6 +46,7 @@ end
 namespace :debug do
   desc "turn debug logging on"
   task :conf do
+    ENV['log'] ||= 'debug'
     Cmds.configure_logger
   end
 
@@ -134,58 +137,79 @@ namespace :debug do
       }
 
       # PTY.spawn "./test/questions.rb", in: $stdin, out: $stdout
-      PTY.spawn "./test/questions.rb" do |stdout, stdin, pid|
+      Open3.popen3 "./test/questions.rb" do |stdin, stdout, stderr, thread|
 
         to_write = Queue.new
 
         stdout_thread = Thread.new do
-          puts "starting stout thread"
+          Thread.current[:name] = "stdout"
+
+          log.debug "starting stout thread"
+
           loop do
+            log.debug "blocking on stdout.gets"
+
             line = stdout.gets
-            puts "read line #{ line.inspect }"
+            log.debug "read line #{ line.inspect }"
+
             if line.nil?
-              puts "nil line, breaking"
-              to_write << nil
+              log.debug "breaking on nil line."
               break
-              # if stdout.closed?
-              #   puts "stdout closed, pushing nil"
-              #   to_write << nil
-              #   break
-              # else
-              #   puts "stdout open, continuing"
-              # end
             else
-              puts "answering line #{ line.inspect }"
-              q = line.chomp
-              a = as[q]
-              if a.nil?
-                puts "found no answer for #{ q.inspect }"
-              else
-                puts "pushing answer #{ a.inspect }"
-                to_write << a
-              end
-              puts "stdout: #{ line }"
+              puts line
             end
+          #   if line.nil?
+          #     puts "nil line, breaking"
+          #     to_write << nil
+          #     break
+          #     # if stdout.closed?
+          #     #   puts "stdout closed, pushing nil"
+          #     #   to_write << nil
+          #     #   break
+          #     # else
+          #     #   puts "stdout open, continuing"
+          #     # end
+          #   else
+          #     puts "answering line #{ line.inspect }"
+          #     q = line.chomp
+          #     a = as[q]
+          #     if a.nil?
+          #       puts "found no answer for #{ q.inspect }"
+          #     else
+          #       puts "pushing answer #{ a.inspect }"
+          #       to_write << a
+          #     end
+          #     puts "stdout: #{ line }"
+          #   end
           end
         end
 
         stdin_thread = Thread.new do
-          puts "starting stdin thread"
-          loop do
-            puts "input blocking on pop"
-            a = to_write.pop
-            if a.nil?
-              puts "nil pop, breaking"
-              break
-            else
-              puts "writing #{ a.inspect }"
-              stdin.puts a
-            end
+          Thread.current[:name] = "stdin"
+
+          log.debug "starting stdin thread"
+          while thread.alive?
+            log.debug "input thread is alive, blocking on $stdin.gets"
+            input = $stdin.gets
+            log.debug "got input #{ input.inspect }"
+            log.debug "writing to stdin..."
+            stdin.puts input
           end
+          # loop do
+          #   puts "input blocking on pop"
+          #   a = to_write.pop
+          #   if a.nil?
+          #     puts "nil pop, breaking"
+          #     break
+          #   else
+          #     puts "writing #{ a.inspect }"
+          #     stdin.puts a
+          #   end
+          # end
         end
 
-        stdout_thread.join
-        stdin_thread.join
+        thread.join
+        # stdin_thread.kill
       end
     end
 
@@ -286,4 +310,17 @@ namespace :debug do
       end
     end
   end # namespace stream
+
+  namespace :input do
+    desc "debug stream input"
+    task :file => :conf do
+      log.debug "HERE"
+      result = Cmds "./test/echo_cmd.rb" do
+        File.open "./test/lines.txt"
+      end
+
+      data = JSON.load result.out
+      pp data
+    end
+  end # namespace input
 end # namespace debug

@@ -37,5 +37,16 @@ describe "Cmds::call" do
       expect(result).to be_instance_of Cmds::Result
       expect(result.out).to match /^\s+4$/
     end
+
+    it "accepts input from a stream" do
+      File.open "./test/lines.txt" do |f|
+        input = f.read
+        f.rewind
+
+        result = Cmds("./test/echo_cmd.rb") { f }
+
+        expect(JSON.load(result.out)['stdin']).to eq input
+      end
+    end
   end # context input
 end # Cmds::call
