@@ -2,6 +2,7 @@ require 'thread'
 require 'pastel'
 require 'json'
 require 'pp'
+require 'tempfile'
 
 require "bundler/gem_tasks"
 
@@ -56,6 +57,42 @@ namespace :debug do
       two
       three
     BLOCK
+
+    desc "output to blocks"
+    task :blocks => :conf do
+      Cmds.stream "ls" do |io|
+        io.on_out do |line|
+          puts "line: #{ line.inspect }"
+        end
+
+        nil
+      end
+    end
+
+    desc "use a file as output"
+    task :file_out => :conf do
+      f = Tempfile.new "blah"
+      Cmds.stream "echo here" do |io|
+        io.out = f
+
+        nil
+      end
+
+      f.rewind
+      puts f.read
+      f.close
+      f.unlink
+    end
+
+    # rspec uses fuckign StirngIO
+    desc "sio"
+    task :sio => :conf do
+      sio = StringIO.new
+      Cmds.stream './test/tick.rb <%= times %>', times: 5 do |io|
+        io.out = sio
+        nil
+      end
+    end
 
     desc "input block value"
     task :value => :conf do

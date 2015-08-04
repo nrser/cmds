@@ -100,12 +100,8 @@ class Cmds
 
     def initialize
       @queue = Queue.new
-
       @out = $stdout
-      @out_closed = false
-
       @err = $stderr
-      @err_closed = false
     end
 
     def on_out &block
@@ -113,11 +109,11 @@ class Cmds
     end
 
     def out= io
-      unless io.is_a? IO
-        raise ArgumentError.new NRSER.squish <<-BLOCK
-          out must be set to an IO, not #{ io.inspect }
-        BLOCK
-      end
+      # unless io.is_a? IO
+      #   raise ArgumentError.new NRSER.squish <<-BLOCK
+      #     out must be set to an IO, not #{ io.inspect }
+      #   BLOCK
+      # end
       @out = io
     end
 
@@ -131,11 +127,11 @@ class Cmds
     end
 
     def err= io
-      unless io.is_a? IO
-        raise ArgumentError.new NRSER.squish <<-BLOCK
-          err must be set to an IO, not #{ io.inspect }
-        BLOCK
-      end
+      # unless io.is_a? IO
+      #   raise ArgumentError.new NRSER.squish <<-BLOCK
+      #     err must be set to an IO, not #{ io.inspect }
+      #   BLOCK
+      # end
       @err = io
     end
 
@@ -145,20 +141,25 @@ class Cmds
     end
 
     def start
-      loop do
+      # if out is a proc, it's not done
+      out_done = ! @out.is_a?(Proc)
+      # same for err
+      err_done = ! @err.is_a?(Proc)
+
+      until out_done && err_done
         key, line = @queue.pop
         
         case key
         when :out
           if line.nil?
-            @out_closed = true
+            out_done = true
           else
             handle_line @out, line
           end
 
         when :err
           if line.nil?
-            @err_closed = true
+            err_done = true
           else
             handle_line @err, line
           end
@@ -166,8 +167,6 @@ class Cmds
         else
           raise "bad key: #{ key.inspect }"
         end
-
-        break if @out_closed && @err_closed
       end
     end #start
 
@@ -558,63 +557,177 @@ class Cmds
     # build the command string
     cmd = Cmds.sub @template, options[:args], options[:kwds]
 
-    # see: http://stackoverflow.com/a/1162850/83386
-    status = Open3.popen3(cmd) do |stdin, stdout, stderr, thread|
-      # read each stream from a new thread
-      {
-        stdout => ["OUTPUT", handler.method(:thread_send_out)],
-        stderr => ["ERROR", handler.method(:thread_send_err)],
-      }.each do |stream, (name, meth)|
-        Thread.new do
-          Thread.current[:name] = name
-          Cmds.debug "thread started"
+    spawn_opts = {}
 
-          loop do
-            Cmds.debug "blocking on gets..."
-            line = stream.gets
-            if line.nil?
-              Cmds.debug "received nil, output done."
-            else
-              Cmds.debug NRSER.squish <<-BLOCK
-                received #{ line.bytesize } bytes, passing to handler.
-              BLOCK
-            end
-            meth.call line
-            break if line.nil?
-          end
-        end # Thread
+    pipe_in = false
+    pipe_out = false
+    pipe_err = false
+
+
+    Cmds.debug "looking at input...",
+      input: input
+    case input
+    when nil
+      Cmds.debug "input is nil, no spawn opt."
+      # pass
+    when String
+      Cmds.debug "input is a String, creating pipe..."
+
+      pipe_in = true
+      in_r, in_w = IO.pipe
+      spawn_opts[:in] = in_r
+
+      # don't buffer input
+      in_w.sync = true
+    else
+      Cmds.debug "input should be io-like, setting spawn opt.",
+        input: input
+      if input == $stdin
+        Cmds.debug "input is $stdin."
       end
-
-      if input
-        Cmds.debug "input present, starting input thread"
-        Thread.new do
-          Thread.current[:name] = "INPUT"
-          Cmds.debug "thread started"
-
-          if input.is_a? String
-            stdin.write input
-          else
-            Cmds.debug "input is not a string, so it should be IO-like",
-              input: input
-            
-            stdin.write input.read
-            Cmds.debug "write done"
-          end
-
-          Cmds.debug "closing stdin"
-          stdin.close
-        end # Thread
-      end
-
-      # start the handler
-      Cmds.debug "starting handler..."
-      handler.start
-
-      thread.join # don't exit until the external process is done
-
-      # this should be the exit status?
-      thread.value.exitstatus
+      spawn_opts[:in] = input
     end
+
+    Cmds.debug "looking at output..."
+    if handler.out.is_a? Proc
+      Cmds.debug "output is a Proc, creating pipe..."
+      pipe_out = true
+      out_r, out_w = IO.pipe
+      spawn_opts[:out] = out_w
+    else
+      Cmds.debug "output should be io-like, setting spawn opt.",
+        output: handler.out
+      if handler.out == $stdout
+        Cmds.debug "output is $stdout."
+      end
+      spawn_opts[:out] = handler.out
+    end
+
+    Cmds.debug "looking at error..."
+    if handler.err.is_a? Proc
+      Cmds.debug "error is a Proc, creating pipe..."
+      pipe_err = true
+      err_r, err_w = IO.pipe
+      spawn_opts[:err] = err_w
+    else
+      Cmds.debug "output should be io-like, setting spawn opt.",
+        error: handler.err
+      if handler.err == $stderr
+        Cmds.debug "error is $stderr."
+      end
+      spawn_opts[:err] = handler.err
+    end
+
+    Cmds.debug "spawning...",
+      cmd: cmd,
+      opts: spawn_opts
+
+    pid = spawn cmd, spawn_opts
+
+    Cmds.debug "spawned.",
+      pid: pid
+
+    wait_thread = Process.detach pid
+
+    # close child ios if created
+    # the spawned process will read from in_r so we don't need it
+    in_r.close if pipe_in
+    out_w.close if pipe_out
+    err_w.close if pipe_err
+
+    # create threads to handle the pipes
+
+    in_thread = if pipe_in
+      Thread.new do
+        Thread.current[:name] = "INPUT"
+        Cmds.debug "thread started, writing input..."
+
+        in_w.write input
+        Cmds.debug "write done, closing stdin"
+        in_w.close
+      end # Thread
+    end
+
+    out_thread = if pipe_out
+      Thread.new do
+        Thread.current[:name] = "OUTPUT"
+        Cmds.debug "thread started"
+
+        loop do
+          Cmds.debug "blocking on gets..."
+          line = out_r.gets
+          if line.nil?
+            Cmds.debug "received nil, output done."
+          else
+            Cmds.debug NRSER.squish <<-BLOCK
+              received #{ line.bytesize } bytes, passing to handler.
+            BLOCK
+          end
+          handler.thread_send_out line
+          break if line.nil?
+        end
+      end
+    end
+
+    err_thread = if pipe_err
+      Thread.new do
+        Thread.current[:name] = "ERROR"
+        Cmds.debug "thread started"
+
+        loop do
+          Cmds.debug "blocking on gets..."
+          line = err_r.gets
+          if line.nil?
+            Cmds.debug "received nil, output done."
+          else
+            Cmds.debug NRSER.squish <<-BLOCK
+              received #{ line.bytesize } bytes, passing to handler.
+            BLOCK
+          end
+          handler.thread_send_err line
+          break if line.nil?
+        end
+      end
+    end
+
+    Cmds.debug "handing off main thread control to the handler..."
+    begin
+      handler.start
+    ensure
+      # i *think* we need to wait for the threads to complete before
+      # closing the pipes
+      if pipe_in
+        Cmds.debug "joining input thread..."
+        in_thread.join
+
+        Cmds.debug "closing pipe..."
+        in_w.close unless in_w.closed?
+      end
+
+      if pipe_out
+        Cmds.debug "joining output thread..."
+        out_thread.join
+
+        Cmds.debug "closing output pipe..."
+        out_r.close unless out_r.closed?
+      end
+
+      if pipe_err
+        Cmds.debug "joining error thread..."
+        err_thread.join
+
+        Cmds.debug "closing error pipe..."
+        err_r.close unless err_r.closed?
+      end
+
+      # then we need to make sure we wait for the process to complete
+      Cmds.debug "joining wait thread"
+      wait_thread.join
+    end
+
+    Cmds.debug "getting exit status..."
+    status = wait_thread.value.exitstatus
+    Cmds.debug "exit status: #{ status.inspect }"
 
     if @assert && status != 0
       msg = NRSER.squish <<-BLOCK
