@@ -539,18 +539,22 @@ class Cmds
           Thread.current[:name] = "INPUT"
           Cmds.debug "thread started"
 
-          written = 0
-          loop do
-            Cmds.debug "blocking on write..."
-            written = stdin.write input
-            Cmds.debug "wrote #{ written } bytes to stdin."
+          if input.is_a? String
+            written = 0
+            loop do
+              Cmds.debug "blocking on write..."
+              written = stdin.write input
+              Cmds.debug "wrote #{ written } bytes to stdin."
 
-            input = input.byteslice(written..-1)
-            if input.empty?
-              Cmds.debug "write completed."
-              stdin.close
-              break
+              input = input.byteslice(written..-1)
+              if input.empty?
+                Cmds.debug "write completed."
+                stdin.close
+                break
+              end
             end
+          else
+            Cmds.debug "input is not a string, so it should be IO-like"
           end
         end # Thread
       end
