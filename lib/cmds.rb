@@ -96,25 +96,17 @@ class Cmds
   end # end ERBContext
 
   class IOHandler
-    attr_reader :out, :err
+    attr_accessor :in, :out, :err
 
     def initialize
       @queue = Queue.new
+      @in = nil
       @out = $stdout
       @err = $stderr
     end
 
     def on_out &block
       @out = block
-    end
-
-    def out= io
-      # unless io.is_a? IO
-      #   raise ArgumentError.new NRSER.squish <<-BLOCK
-      #     out must be set to an IO, not #{ io.inspect }
-      #   BLOCK
-      # end
-      @out = io
     end
 
     # called in seperate thread handling process IO
@@ -124,15 +116,6 @@ class Cmds
 
     def on_err &block
       @err = block
-    end
-
-    def err= io
-      # unless io.is_a? IO
-      #   raise ArgumentError.new NRSER.squish <<-BLOCK
-      #     err must be set to an IO, not #{ io.inspect }
-      #   BLOCK
-      # end
-      @err = io
     end
 
     # called in seperate thread handling process IO
@@ -546,12 +529,23 @@ class Cmds
     input = @input
 
     if input_block
-      # invoke the input block on the handler
-      # if it returns a non-nil value, that will override the input
-      input_block_value = input_block.call handler
+      case input_block.arity
+      when 0
+        # when the input block takes no arguments it returns the input
+        input = input_block.call
+      when 1
+        # when the input block takes one argument, give it the handler and
+        # ignore the return value
+        input_block.call handler
 
-      # conditionally override the input
-      input = input_block_value unless input_block_value.nil?
+        # if input was assigned to the handler in the block, use it as input
+        input = handler.in unless handler.in.nil?
+      else
+        # bad block provided
+        raise ArgumentError.new NRSER.squish <<-BLOCK
+          provided input block must have arity 0 or 1
+        BLOCK
+      end # case input.arity
     end # if input_block
 
     # build the command string
