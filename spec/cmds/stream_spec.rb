@@ -29,7 +29,7 @@ describe "Cmds::stream" do
   end
 
   context "input" do
-    it "accepts value input from a block" do
+    it "accepts string value input from a block" do
 
       out, err = temp_outs do
         Cmds.stream "wc -l" do
@@ -45,7 +45,7 @@ describe "Cmds::stream" do
       expect(err).to eq ''
     end
 
-    it "accepts stream input from a block" do
+    it "accepts stream value input from a block" do
       out, err = temp_outs do
         Cmds.stream "wc -l" do
           File.open "./test/lines.txt"
