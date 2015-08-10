@@ -45,7 +45,7 @@ describe "Cmds::capture" do
         input = f.read
         f.rewind
 
-        result = echo_cmd.capture { f }
+        result = Cmds.new("./test/echo_cmd.rb").capture { f }
 
         expect(JSON.load(result.out)['stdin']).to eq input
       end

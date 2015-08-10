@@ -48,11 +48,6 @@ def temp_outs
   [out, err]
 end # temp_out
 
-# gets a `Cmds` instance pointing to the `test/echo_cmd.rb` script
-def echo_cmd
-  Cmds.new "./test/echo_cmd.rb"
-end
-
 shared_examples "ok" do
   it "should be ok" do
     expect( result.ok? ).to be true
