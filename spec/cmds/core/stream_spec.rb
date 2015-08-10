@@ -5,7 +5,7 @@ describe "Cmds::stream" do
 
   it "writes to $stdout and $stderr by default" do
     out, err = temp_outs do
-      Cmds.stream './test/tick.rb <%= times %>', times: times
+      Cmds.new('./test/tick.rb <%= times %>').stream times: times
     end
 
     expect(out).to eq times.times.map{|_| "#{_}\n"}.join
@@ -15,7 +15,7 @@ describe "Cmds::stream" do
   it "handles writes in blocks" do
     out_count = 0
     err_count = 0
-    Cmds.stream './test/tick.rb <%= times %>', times: times do |io|
+    Cmds.new('./test/tick.rb <%= times %>').stream(times: times) do |io|
       io.on_out do |line|
         out_count += 1
       end
@@ -32,7 +32,7 @@ describe "Cmds::stream" do
     it "accepts string value input from a block" do
 
       out, err = temp_outs do
-        Cmds.stream "wc -l" do
+        Cmds.new("wc -l").stream do
           <<-BLOCK
             one
             two
@@ -47,7 +47,7 @@ describe "Cmds::stream" do
 
     it "accepts stream value input from a block" do
       out, err = temp_outs do
-        Cmds.stream "wc -l" do
+        Cmds.new("wc -l").stream do
           File.open "./test/lines.txt"
         end
       end

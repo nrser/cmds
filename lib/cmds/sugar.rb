@@ -3,14 +3,17 @@
 # global methods
 # ==============
 
+# proxies to `Cmds::capture`
 def Cmds *args, &block
-  Cmds.run *args, &block
+  Cmds.capture *args, &block
 end
 
+# proxies to `Cmds::ok?`
 def Cmds? *args, &block
   Cmds.ok? *args, &block
 end
 
+# proxies to `Cmds::assert`
 def Cmds! *args, &block
   Cmds.assert *args, &block
 end
@@ -20,8 +23,8 @@ class Cmds
   # =============
 
   # create a new Cmd from template and subs and call it
-  def self.run template, *subs, &input_block
-    Cmds.debug "running with",
+  def self.capture template, *subs, &input_block
+    Cmds.debug "Cmds::capture with",
       input_block: input_block
     new(template, options(subs, input_block)).call
   end

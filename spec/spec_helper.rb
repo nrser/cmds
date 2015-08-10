@@ -1,3 +1,7 @@
+require 'pathname'
+
+ROOT = 
+
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'cmds'
 
@@ -10,26 +14,43 @@ def expect_argv result
   expect(argv(result))
 end
 
-# rspec uses StringIO for stdout and stderr, which spawn doesn't like
+# rspec uses StringIO for stdout and stderr, which spawn doesn't like.
+# this function swaps in tempfiles for $stdout and $stderr and returns
+# there outputs as strings.
 def temp_outs
-  prev_stdout = $stdout
-  prev_stderr = $stderr
-  out_f = Tempfile.new "rspec_stdout"
-  err_f = Tempfile.new "rspec_stderr"
-  $stdout = out_f
-  $stderr = err_f
+  # save ref to $stdout and $stderr
+  prev_stdout, prev_stderr = $stdout, $stderr
+
+  # create templfiles for out and err
+  out_f, err_f = ['out', 'err'].map {|s|
+    Tempfile.new "rspec_std#{ s }"
+  }
+
+  # assign those to $stdout and $stderr
+  $stdout, $stderr = out_f, err_f
+
+  # run the provided block
   yield
-  out_f.rewind
-  out = out_f.read
-  err_f.rewind
-  err = err_f.read
-  [out_f, err_f].each {|f|
+
+  # get the out and err strings and clean up
+  out, err = [out_f, err_f].map {|f|
+    f.rewind
+    str = f.read
     f.close
     f.unlink
+    str
   }
-  $stdout = prev_stdout
-  $stderr = prev_stderr
+
+  # swap back to the old $stdout and $stderr
+  $stdout, $stderr = prev_stdout, prev_stderr
+
+  # return the output strings
   [out, err]
+end # temp_out
+
+# gets a `Cmds` instance pointing to the `test/echo_cmd.rb` script
+def echo_cmd
+  Cmds.new "./test/echo_cmd.rb"
 end
 
 shared_examples "ok" do
