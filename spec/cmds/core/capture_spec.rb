@@ -1,5 +1,3 @@
-require 'json'
-
 require 'spec_helper'
 
 describe "Cmds::capture" do
@@ -7,9 +5,16 @@ describe "Cmds::capture" do
     args_cmd = Cmds.new "./test/echo_cmd.rb <%= arg %>"
     kwds_cmd = Cmds.new "./test/echo_cmd.rb <%= s %>"
 
-    ["arg one", "arg two", "arg three"].each do |arg|
-      [args_cmd.capture([arg]), kwds_cmd.capture(s: arg)].each do |result|
-        expect_argv( result ).to eq [arg]
+    args = ["arg one", "arg two", "arg three"]
+
+    args.each do |arg|
+      results = [
+        args_cmd.capture([arg]),
+        kwds_cmd.capture(s: arg)
+      ]
+
+      results.each do |result|
+        expect( echo_cmd_argv result ).to eq [arg]
       end
     end
   end # is reusable
@@ -25,19 +30,13 @@ describe "Cmds::capture" do
     }
 
     it "accepts input via options" do
-      cmd = Cmds.new "wc -l", input: input
-      result = cmd.capture
-      expect( result.out ).to match /^\s+4$/
+      cmd = Cmds.new(ECHO_CMD, input: input)
+      expect( echo_cmd_stdin cmd.capture ).to eq input
     end
 
     it "accepts input via block" do
-      cmd = Cmds.new "wc -l"
-      expect(cmd).to be_instance_of Cmds
-      expect(cmd).to respond_to :capture
-
-      result = cmd.call { input }
-      expect(result).to be_instance_of Cmds::Result
-      expect(result.out).to match /^\s+4$/
+      cmd = Cmds.new ECHO_CMD
+      expect( echo_cmd_stdin cmd.call { input } ).to eq input
     end
 
     it "accepts input from a stream" do
@@ -45,10 +44,9 @@ describe "Cmds::capture" do
         input = f.read
         f.rewind
 
-        result = Cmds.new("./test/echo_cmd.rb").capture { f }
-
-        expect(JSON.load(result.out)['stdin']).to eq input
+        cmd = Cmds.new("./test/echo_cmd.rb")
+        expect( echo_cmd_stdin cmd.capture { f } ).to eq input
       end
     end
   end # context input
-end # Cmds::call
+end # Cmds::capture

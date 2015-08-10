@@ -1,17 +1,32 @@
 require 'pathname'
-
-ROOT = 
+require 'json'
 
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'cmds'
 
-def argv result
-  expect(result.ok?).to be true
-  JSON.load(result.out)['ARGV']
+ECHO_CMD = "./test/echo_cmd.rb"
+
+def echo_cmd_data result
+  expect( result.cmd ).to start_with ECHO_CMD
+  expect( result ).to be_instance_of Cmds::Result
+  expect( result.ok? ).to be true
+  data = JSON.load result.out
+  expect( data ).to be_instance_of Hash
+  data
 end
 
-def expect_argv result
-  expect(argv(result))
+def echo_cmd_key result, key
+  data = echo_cmd_data result
+  expect( data.key? key ).to be true
+  data[key]
+end
+
+def echo_cmd_argv result
+  echo_cmd_key result, 'ARGV'
+end
+
+def echo_cmd_stdin result
+  echo_cmd_key result, 'stdin'
 end
 
 # rspec uses StringIO for stdout and stderr, which spawn doesn't like.
