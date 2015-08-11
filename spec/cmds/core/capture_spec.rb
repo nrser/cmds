@@ -44,7 +44,7 @@ describe "Cmds::capture" do
         input = f.read
         f.rewind
 
-        cmd = Cmds.new("./test/echo_cmd.rb")
+        cmd = Cmds.new ECHO_CMD
         expect( echo_cmd_stdin cmd.capture { f } ).to eq input
       end
     end
