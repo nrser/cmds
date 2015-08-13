@@ -1,71 +1,12 @@
 class Cmds
-  attr_reader :tempalte, :args, :kwds, :input, :assert
-
-  def initialize template, opts = {}
-    Cmds.debug "Cmds constructed",
-      template: template,
-      options: opts
-
-    @template = template
-    @args = opts[:args] || []
-    @kwds = opts[:kwds] || {}
-    @input = opts[:input] || nil
-    @assert = opts[:assert] || false
-  end #initialize
-
-  # invokes the command and returns a Result with the captured outputs
-  def capture *subs, &input_block
-    # merge any stored args and kwds and replace input if provided
-    options = merge_options subs, input_block
-
-    # build the command string
-    cmd = Cmds.sub @template, options[:args], options[:kwds]
-
-    Cmds.debug "built command string: #{ cmd.inspect }"
-
-    # make the call with input if provided
-    out, err, status = if options[:input].nil?
-      Cmds.debug "no input present, using capture3."
-      Open3.capture3 cmd
-    else
-      Cmds.debug "input present."
-
-      if options[:input].is_a? String
-        Cmds.debug "input is a String, using capture3."
-        Open3.capture3 cmd, stdin_data: options[:input]
-
-      else
-        Cmds.debug "input is not a string, so it should be readable."
-        Cmds.debug "need to use threads..."
-
-        # from the capture3 implementation
-        Open3.popen3(cmd) {|stdin, stdout, stderr, thread|
-          out_reader = Thread.new { stdout.read }
-          err_reader = Thread.new { stderr.read }
-          begin
-            # TODO: this reads all as one chunk, might want to stream
-            stdin.write options[:input].read
-          rescue Errno::EPIPE
-          end
-          stdin.close
-          [out_reader.value, err_reader.value, thread.value]
-        }
-
-      end # if input is a String
-    end # if input
-
-    # build a Result
-    result = Cmds::Result.new cmd, status.exitstatus, out, err
-
-    result.raise_error if @assert
-
-    return result
-  end #call
-
-  # inspired by
+  # stream inputs and/or outputs
+  # 
+  # originally inspired by
   # 
   # https://nickcharlton.net/posts/ruby-subprocesses-with-stdout-stderr-streams.html
   # 
+  # with major modifications from looking at Ruby's open3 module.
+  #
   def stream *subs, &input_block
     # use `merge_options` to get the args and kwds (we will take custom
     # care of input below)
@@ -75,10 +16,11 @@ class Cmds
     handler = IOHandler.new
 
     # handle input
-    # 
+    
     # default to the instance variable
     input = @input
 
+    # if a block was provided, it might provide overriding input
     if input_block
       case input_block.arity
       when 0
@@ -102,12 +44,14 @@ class Cmds
     # build the command string
     cmd = Cmds.sub @template, options[:args], options[:kwds]
 
+    # hash of options that will be passed to `spawn`
     spawn_opts = {}
 
+    # flags that are set to true below if pipes are created
+    # for in, out and err
     pipe_in = false
     pipe_out = false
     pipe_err = false
-
 
     Cmds.debug "looking at input...",
       input: input
@@ -174,9 +118,13 @@ class Cmds
 
     wait_thread = Process.detach pid
 
+    Cmds.debug "wait thread created.",
+      thread: wait_thread
+
     # close child ios if created
     # the spawned process will read from in_r so we don't need it
     in_r.close if pipe_in
+    # and we don't need to write to the output pipes
     out_w.close if pipe_out
     err_w.close if pipe_err
 
@@ -276,7 +224,7 @@ class Cmds
 
     if @assert && status != 0
       msg = NRSER.squish <<-BLOCK
-        streamed command `#{ @cmd }` exited with status #{ status }
+        streamed command `#{ cmd }` exited with status #{ status }
       BLOCK
 
       raise SystemCallError.new msg, status
@@ -289,26 +237,4 @@ class Cmds
   def curry *subs, &input_block
     self.class.new @template, merge_options(subs, input_block)
   end
-
-  private
-
-    # merges options already present on the object with options
-    # provided via subs and input_block and returns a new options
-    # Hash
-    def merge_options subs, input_block
-      # get the options present in the arguments
-      options = Cmds.options subs, input_block
-      # the new args are created by appending the provided args to the
-      # existing ones
-      options[:args] = @args + options[:args]
-      # the new kwds are created by merging the provided kwds into the
-      # exising ones (new values override previous)
-      options[:kwds] = @kwds.merge options[:kwds]
-      # if there is input present via the provided block, it is used.
-      # otherwise, previous input is used, which may be `nil`
-      options[:input] ||= @input
-      return options
-    end
-
-  # end private
 end

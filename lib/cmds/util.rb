@@ -1,5 +1,8 @@
-# util functions as class methods
+# util functions
 class Cmds
+  # class methods
+  # =============
+
   # shortcut for Shellwords.escape
   # 
   # also makes it easier to change or customize or whatever
@@ -218,4 +221,34 @@ class Cmds
         '\1\2<\3>s\4'
       )
   end # ::replace_shortcuts
+
+  # instance methods
+  # ================
+
+  # returns a new `Cmds` with the subs and input block merged in
+  def curry *subs, &input_block
+    self.class.new @template, merge_options(subs, input_block)
+  end
+
+  private
+
+    # merges options already present on the object with options
+    # provided via subs and input_block and returns a new options
+    # Hash
+    def merge_options subs, input_block
+      # get the options present in the arguments
+      options = Cmds.options subs, input_block
+      # the new args are created by appending the provided args to the
+      # existing ones
+      options[:args] = @args + options[:args]
+      # the new kwds are created by merging the provided kwds into the
+      # exising ones (new values override previous)
+      options[:kwds] = @kwds.merge options[:kwds]
+      # if there is input present via the provided block, it is used.
+      # otherwise, previous input is used, which may be `nil`
+      options[:input] ||= @input
+      return options
+    end # #merge_options
+
+  # end private
 end # class Cmds
