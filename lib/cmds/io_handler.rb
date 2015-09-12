@@ -27,6 +27,10 @@ class Cmds
       @queue << [:err, line]
     end
 
+    def thread_send_line sym, line
+      @queue << [sym, line]
+    end
+
     def start
       # if out is a proc, it's not done
       out_done = ! @out.is_a?(Proc)

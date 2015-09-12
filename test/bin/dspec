@@ -1,0 +1,1 @@
+rspec -r ./spec/debug_helper.rb "$@"

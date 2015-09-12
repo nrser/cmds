@@ -69,4 +69,10 @@ class Cmds
     capture.raise_error
   end
 
+  def proxy
+    stream do |io|
+      io.in = $stdin
+    end
+  end
+
 end # class Cmds

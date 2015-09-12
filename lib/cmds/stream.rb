@@ -47,27 +47,30 @@ class Cmds
     # hash of options that will be passed to `spawn`
     spawn_opts = {}
 
-    # flags that are set to true below if pipes are created
-    # for in, out and err
-    pipe_in = false
-    pipe_out = false
-    pipe_err = false
-
     Cmds.debug "looking at input...",
       input: input
-    case input
+
+    # (possibly) create the input pipe... this will be nil in the cases:
+    # 
+    # 1.  no input was provided
+    # 2.  the provided input is io-like. in this case it will be used directly
+    #     in the `spawn` options.
+    # 
+    in_pipe = case input
     when nil
       Cmds.debug "input is nil, no spawn opt."
-      # pass
+      nil
+
     when String
       Cmds.debug "input is a String, creating pipe..."
 
-      pipe_in = true
-      in_r, in_w = IO.pipe
-      spawn_opts[:in] = in_r
+      in_pipe = Cmds::Pipe.new "INPUT", :in
+      spawn_opts[:in] = in_pipe.r
 
       # don't buffer input
-      in_w.sync = true
+      in_pipe.w.sync = true
+      in_pipe
+
     else
       Cmds.debug "input should be io-like, setting spawn opt.",
         input: input
@@ -75,37 +78,47 @@ class Cmds
         Cmds.debug "input is $stdin."
       end
       spawn_opts[:in] = input
-    end
+      nil
 
-    Cmds.debug "looking at output..."
-    if handler.out.is_a? Proc
-      Cmds.debug "output is a Proc, creating pipe..."
-      pipe_out = true
-      out_r, out_w = IO.pipe
-      spawn_opts[:out] = out_w
-    else
-      Cmds.debug "output should be io-like, setting spawn opt.",
-        output: handler.out
-      if handler.out == $stdout
-        Cmds.debug "output is $stdout."
-      end
-      spawn_opts[:out] = handler.out
-    end
+    end # case input
 
-    Cmds.debug "looking at error..."
-    if handler.err.is_a? Proc
-      Cmds.debug "error is a Proc, creating pipe..."
-      pipe_err = true
-      err_r, err_w = IO.pipe
-      spawn_opts[:err] = err_w
-    else
-      Cmds.debug "output should be io-like, setting spawn opt.",
-        error: handler.err
-      if handler.err == $stderr
-        Cmds.debug "error is $stderr."
+    # (possibly) create the output pipes.
+    # 
+    # `stream` can be told to send it's output to either:
+    # 
+    # 1.  a Proc that will invoked with each line.
+    # 2.  an io-like object that can be provided as `spawn`'s `:out` or 
+    #     `:err` options.
+    # 
+    # in case (1) a `Cmds::Pipe` wrapping an `IO::Pipe` will be created and 
+    # assigned to the relevant of `out_pipe` or `err_pipe`.
+    # 
+    # in case (2) the io-like object will be sent directly to `spawn` and
+    # the relevant `out_pipe` or `err_pipe` will be `nil`.
+    #
+    out_pipe, err_pipe = [
+      ["ERROR", :err],
+      ["OUTPUT", :out],
+    ].map do |name, sym|
+      Cmds.debug "looking at #{ name }..."
+      # see if hanlder.out or hanlder.err is a Proc
+      if handler.send(sym).is_a? Proc
+        Cmds.debug "#{ name } is a Proc, creating pipe..."
+        pipe = Cmds::Pipe.new name, sym
+        # the corresponding :out or :err option for spawn needs to be
+        # the pipe's write handle
+        spawn_opts[sym] = pipe.w
+        # return the pipe
+        pipe
+
+      else
+        Cmds.debug "#{ name } should be io-like, setting spawn opt.",
+          output: handler.send(sym)
+        spawn_opts[sym] = handler.send(sym)
+        # the pipe is nil!
+        nil
       end
-      spawn_opts[:err] = handler.err
-    end
+    end # map outputs
 
     Cmds.debug "spawning...",
       cmd: cmd,
@@ -122,66 +135,48 @@ class Cmds
       thread: wait_thread
 
     # close child ios if created
-    # the spawned process will read from in_r so we don't need it
-    in_r.close if pipe_in
-    # and we don't need to write to the output pipes
-    out_w.close if pipe_out
-    err_w.close if pipe_err
+    # the spawned process will read from in_pipe.r so we don't need it
+    in_pipe.r.close if in_pipe
+    # and we don't need to write to the output pipes, that will also happen
+    # in the spawned process
+    [out_pipe, err_pipe].each {|pipe| pipe.w.close if pipe}
 
-    # create threads to handle the pipes
+    # create threads to handle any pipes that were created
 
-    in_thread = if pipe_in
+    in_thread = if in_pipe
       Thread.new do
-        Thread.current[:name] = "INPUT"
+        Thread.current[:name] = in_pipe.name
         Cmds.debug "thread started, writing input..."
 
-        in_w.write input
+        in_pipe.w.write input
         Cmds.debug "write done, closing stdin"
-        in_w.close
+        in_pipe.w.close
       end # Thread
     end
 
-    out_thread = if pipe_out
-      Thread.new do
-        Thread.current[:name] = "OUTPUT"
-        Cmds.debug "thread started"
+    out_thread, err_thread = [out_pipe, err_pipe].map do |pipe|
+      if pipe
+        Thread.new do
+          Thread.current[:name] = pipe.name
+          Cmds.debug "thread started"
 
-        loop do
-          Cmds.debug "blocking on gets..."
-          line = out_r.gets
-          if line.nil?
-            Cmds.debug "received nil, output done."
-          else
-            Cmds.debug NRSER.squish <<-BLOCK
-              received #{ line.bytesize } bytes, passing to handler.
-            BLOCK
+          loop do
+            Cmds.debug "blocking on gets..."
+            line = pipe.r.gets
+            if line.nil?
+              Cmds.debug "received nil, output done."
+            else
+              Cmds.debug NRSER.squish <<-BLOCK
+                received #{ line.bytesize } bytes, passing to handler.
+              BLOCK
+            end
+            handler.thread_send_line pipe.sym, line
+            break if line.nil?
           end
-          handler.thread_send_out line
-          break if line.nil?
-        end
-      end
-    end
-
-    err_thread = if pipe_err
-      Thread.new do
-        Thread.current[:name] = "ERROR"
-        Cmds.debug "thread started"
-
-        loop do
-          Cmds.debug "blocking on gets..."
-          line = err_r.gets
-          if line.nil?
-            Cmds.debug "received nil, output done."
-          else
-            Cmds.debug NRSER.squish <<-BLOCK
-              received #{ line.bytesize } bytes, passing to handler.
-            BLOCK
-          end
-          handler.thread_send_err line
-          break if line.nil?
-        end
-      end
-    end
+          pipe.r.close unless pipe.r.closed?
+        end # thread
+      end # if pipe
+    end # map threads
 
     Cmds.debug "handing off main thread control to the handler..."
     begin
@@ -189,29 +184,23 @@ class Cmds
     ensure
       # i *think* we need to wait for the threads to complete before
       # closing the pipes
-      if pipe_in
+      if in_thread
         Cmds.debug "joining input thread..."
         in_thread.join
 
         Cmds.debug "closing pipe..."
-        in_w.close unless in_w.closed?
+        in_pipe.w.close unless in_pipe.w.closed?
       end
 
-      if pipe_out
-        Cmds.debug "joining output thread..."
-        out_thread.join
+      [[out_pipe, out_thread], [err_pipe, err_thread]].each do |(pipe, thread)|
+        if thread
+          Cmds.debug "joining #{ thread[:name] } thread..."
+          thread.join
 
-        Cmds.debug "closing output pipe..."
-        out_r.close unless out_r.closed?
-      end
-
-      if pipe_err
-        Cmds.debug "joining error thread..."
-        err_thread.join
-
-        Cmds.debug "closing error pipe..."
-        err_r.close unless err_r.closed?
-      end
+          Cmds.debug "closing #{ thread[:name] } pipe..."
+          pipe.r.close unless pipe.r.closed?
+        end
+      end # each pipe / thread
 
       # then we need to make sure we wait for the process to complete
       Cmds.debug "joining wait thread"
