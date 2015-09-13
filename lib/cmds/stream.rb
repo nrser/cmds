@@ -90,8 +90,8 @@ class Cmds
     # 2.  an io-like object that can be provided as `spawn`'s `:out` or 
     #     `:err` options.
     # 
-    # in case (1) a `Cmds::Pipe` wrapping an `IO::Pipe` will be created and 
-    # assigned to the relevant of `out_pipe` or `err_pipe`.
+    # in case (1) a `Cmds::Pipe` wrapping read and write piped `IO` instances
+    # will be created and assigned to the relevant of `out_pipe` or `err_pipe`.
     # 
     # in case (2) the io-like object will be sent directly to `spawn` and
     # the relevant `out_pipe` or `err_pipe` will be `nil`.
@@ -149,8 +149,11 @@ class Cmds
         Cmds.debug "thread started, writing input..."
 
         in_pipe.w.write input
-        Cmds.debug "write done, closing stdin"
+
+        Cmds.debug "write done, closing in_pipe.w..."
         in_pipe.w.close
+
+        Cmds.debug "thread done."
       end # Thread
     end
 
@@ -173,7 +176,11 @@ class Cmds
             handler.thread_send_line pipe.sym, line
             break if line.nil?
           end
+
+          Cmds.debug "reading done, closing pipe.r (unless already closed)..."
           pipe.r.close unless pipe.r.closed?
+
+          Cmds.debug "thread done."
         end # thread
       end # if pipe
     end # map threads
@@ -181,37 +188,27 @@ class Cmds
     Cmds.debug "handing off main thread control to the handler..."
     begin
       handler.start
-    ensure
-      # i *think* we need to wait for the threads to complete before
-      # closing the pipes
-      if in_thread
-        Cmds.debug "joining input thread..."
-        in_thread.join
 
-        Cmds.debug "closing pipe..."
-        in_pipe.w.close unless in_pipe.w.closed?
+      Cmds.debug "handler done."
+
+    ensure
+      # wait for the threads to complete
+      Cmds.debug "joining threads..."
+
+      [in_thread, out_thread, err_thread, wait_thread].each do |thread|
+        thread.join if thread
       end
 
-      [[out_pipe, out_thread], [err_pipe, err_thread]].each do |(pipe, thread)|
-        if thread
-          Cmds.debug "joining #{ thread[:name] } thread..."
-          thread.join
-
-          Cmds.debug "closing #{ thread[:name] } pipe..."
-          pipe.r.close unless pipe.r.closed?
-        end
-      end # each pipe / thread
-
-      # then we need to make sure we wait for the process to complete
-      Cmds.debug "joining wait thread"
-      wait_thread.join
+      Cmds.debug "all threads done."
     end
 
-    Cmds.debug "getting exit status..."
     status = wait_thread.value.exitstatus
     Cmds.debug "exit status: #{ status.inspect }"
 
+    Cmds.debug "checking @assert and exit status..."
     if @assert && status != 0
+      # we don't necessarily have the err output, so we can't include it
+      # in the error message
       msg = NRSER.squish <<-BLOCK
         streamed command `#{ cmd }` exited with status #{ status }
       BLOCK
@@ -219,11 +216,8 @@ class Cmds
       raise SystemCallError.new msg, status
     end
 
+    Cmds.debug "streaming completed."
+
     return status
   end #stream
-
-  # returns a new `Cmds` with the subs merged in
-  def curry *subs, &input_block
-    self.class.new @template, merge_options(subs, input_block)
-  end
 end

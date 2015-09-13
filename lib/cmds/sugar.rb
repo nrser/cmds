@@ -24,9 +24,7 @@ class Cmds
 
   # create a new Cmd from template and subs and call it
   def self.capture template, *subs, &input_block
-    Cmds.debug "Cmds::capture with",
-      input_block: input_block
-    new(template, options(subs, input_block)).call
+    new(template, options(subs, input_block)).capture
   end
 
   def self.ok? template, *subs, &input_block
@@ -58,16 +56,16 @@ class Cmds
   alias_method :call, :capture
 
   def ok?
-    capture.ok?
+    stream == 0
   end
 
   def error?
-    capture.error?
+    stream != 0
   end
 
-  def assert
-    capture.raise_error
-  end
+  # def assert
+  #   capture.raise_error
+  # end
 
   def proxy
     stream do |io|

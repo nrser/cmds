@@ -19,11 +19,11 @@ class Cmds
 
     # raises an error if there was one
     # returns the Result so that it can be chained
-    def raise_error
+    def assert
       if error?
         msg = NRSER.squish <<-BLOCK
           command `#{ @cmd }` exited with status #{ @status }
-          and stderr output #{ err.inspect }
+          and stderr #{ err.inspect }
         BLOCK
 
         raise SystemCallError.new msg, @status

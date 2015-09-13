@@ -14,10 +14,22 @@ class Cmds
     cmd = Cmds.sub @template, options[:args], options[:kwds]
     Cmds.debug "built command string: #{ cmd.inspect }"
 
-    # make the call with input if provided
+    # how we create the subprocess depends on how the input is provided.
+    # there are three possibilities:
+    # 
+    # 1.  no input (`options[:input]` is `nil`).
+    # 2.  `String` input.
+    # 3.  io-like input.
+    # 
+    # all of these options could be handled with `Cmds::stream`, and
+    # maybe they should be to avoid the confusion of branches, but for
+    # the moment and of somewhat historic reasons the first two are handled 
+    # using `Open3.capture3`, which (3) must be handled via `Cmds::stream`.
+    # 
     out, err, status = if options[:input].nil?
       Cmds.debug "no input present, using capture3."
       Open3.capture3 cmd
+
     else
       Cmds.debug "input present."
 
@@ -80,7 +92,7 @@ class Cmds
         Cmds.debug "done, returning output values and status."
         [out_reader.value, err_reader.value, status]
 
-      end # if input is a String
+      end # if input is a String / else
     end # if input
 
     # status returned by capture3 is a Process::Status
@@ -89,7 +101,9 @@ class Cmds
     # build a Result
     result = Cmds::Result.new cmd, status, out, err
 
-    result.raise_error if @assert
+    # tell the Result to assert if the Cmds has been told to, which will
+    # raise a SystemCallError with the exit status if it was non-zero
+    result.assert if @assert
 
     return result
   end # #capture
