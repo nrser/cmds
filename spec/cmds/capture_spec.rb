@@ -1,6 +1,62 @@
 require 'spec_helper'
 
 describe "Cmds::capture" do
+  it "captures stdout" do
+    expect(
+      Cmds.new(%{ruby -e '$stdout.puts "hey"'}).capture.out
+    ).to eq "hey\n"
+  end
+
+  it "captures stderr" do
+    expect(
+      Cmds.new(%{ruby -e '$stderr.puts "ho"'}).capture.err
+    ).to eq "ho\n"
+  end
+
+  context "echo_cmd.rb 'hello world!'" do
+
+    shared_examples "executes correctly" do
+      it_behaves_like "ok"
+
+      it "should have 'hello world!' as ARGV[0]" do
+        expect( JSON.load(result.out)['ARGV'][0] ).to eq "hello world!"
+      end
+    end # executes correctly
+
+    context "positional args" do
+      let(:result) {
+        Cmds "./test/echo_cmd.rb <%= arg %>", ["hello world!"]
+      }
+
+      it_behaves_like "executes correctly"
+    end
+
+    context "keyword args" do
+      let(:result) {
+        Cmds "./test/echo_cmd.rb <%= s %>", s: "hello world!"
+      }
+
+      it_behaves_like "executes correctly"
+    end
+
+  end # context echo_cmd.rb 'hello world!'
+
+  # context "feeding kwargs to args cmd" do
+  #   let(:result) {
+  #     Cmds "./test/echo_cmd.rb %s", s: "sup y'all"
+  #   }
+
+  #   it "" do
+  #     expect( result.cmd ).to eq nil
+  #   end
+  # end
+
+  it "should error when second (subs) arg is not a hash or array" do
+    expect {
+      Cmds "./test/echo_cmd.rb <%= arg %>", "hello world!"
+    }.to raise_error TypeError
+  end
+
   it "is reusable" do
     args_cmd = Cmds.new "./test/echo_cmd.rb <%= arg %>"
     kwds_cmd = Cmds.new "./test/echo_cmd.rb <%= s %>"
@@ -36,7 +92,7 @@ describe "Cmds::capture" do
 
     it "accepts input via block" do
       cmd = Cmds.new ECHO_CMD
-      expect( echo_cmd_stdin cmd.call { input } ).to eq input
+      expect( echo_cmd_stdin cmd.capture { input } ).to eq input
     end
 
     it "accepts input from a stream" do

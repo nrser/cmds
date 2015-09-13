@@ -95,7 +95,7 @@ class Cmds
   # log a debug message along with an optional hash of values.
   def self.debug msg, values = {}
     # don't even bother unless debug logging is turned on
-    return unless Cmds::Debug.on?
-    Debug.logger.debug format(msg, values)
+    return unless Debug.on?
+    Debug.logger.debug Debug.format(msg, values)
   end
 end # class Cmds
