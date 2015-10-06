@@ -10,7 +10,9 @@ class Cmds
       if args.empty? && block.nil?
         if sym.to_s[-1] == '?'
           key = sym.to_s[0...-1].to_sym
-          @kwds[key]
+          # allow `false` to be ommited as well as missing and `nil`
+          # by returning `nil` if the value is "false-y"
+          @kwds[key] if @kwds[key]
         else
           @kwds.fetch sym
         end
