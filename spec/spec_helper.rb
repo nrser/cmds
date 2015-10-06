@@ -63,6 +63,12 @@ def temp_outs
   [out, err]
 end # temp_out
 
+def expect_map method, map
+  map.each do |input, output|
+    expect( method.call *input ).to eq output
+  end
+end
+
 shared_examples "ok" do
   it "should be ok" do
     expect( result.ok? ).to be true

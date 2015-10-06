@@ -192,33 +192,33 @@ class Cmds
     template
       .gsub(
         # %s => <%= arg %>
-        /(\A|[[:space:]])\%s(\Z|[[:space:]])/,
-        '\1<%= arg %>\2'
+        /(?<=\A|[[:space:]])\%s(?=\Z|[[:space:]])/,
+        '<%= arg %>'
       )
       .gsub(
         # %%s => %s (escpaing)
-        /(\A|[[:space:]])(\%+)\%s(\Z|[[:space:]])/,
-        '\1\2s\3'
+        /(?<=\A|[[:space:]])(\%+)\%s(?=\Z|[[:space:]])/,
+        '\1s'
       )
       .gsub(
         # %{key} => <%= key %>, %{key?} => <%= key? %>
-        /(\A|[[:space:]])\%\{([a-zA-Z_]+\??)\}(\Z|[[:space:]])/,
-        '\1<%= \2 %>\3'
+        /(?<=\A|[[:space:]])\%\{([a-zA-Z_]+\??)\}(?=\Z|[[:space:]])/,
+        '<%= \1 %>'
       )
       .gsub(
         # %%{key} => %{key}, %%{key?} => %{key?} (escpaing)
-        /(\A|[[:space:]])(\%+)\%\{([a-zA-Z_]+\??)\}(\Z|[[:space:]])/,
-        '\1\2{\3}\4'
+        /(?<=\A|[[:space:]])(\%+)\%\{([a-zA-Z_]+\??)\}(?=\Z|[[:space:]])/,
+        '\1{\2}\3'
       )
       .gsub(
         # %<key>s => <%= key %>, %<key?>s => <%= key? %>
-        /(\A|[[:space:]])\%\<([a-zA-Z_]+\??)\>s(\Z|[[:space:]])/,
-        '\1<%= \2 %>\3'
+        /(?<=\A|[[:space:]])\%\<([a-zA-Z_]+\??)\>s(?=\Z|[[:space:]])/,
+        '<%= \1 %>'
       )
       .gsub(
         # %%<key>s => %<key>s, %%<key?>s => %<key?>s (escaping)
-        /(\A|[[:space:]])(\%+)\%\<([a-zA-Z_]+\??)\>s(\Z|[[:space:]])/,
-        '\1\2<\3>s\4'
+        /(?<=\A|[[:space:]])(\%+)\%\<([a-zA-Z_]+\??)\>s(?=\Z|[[:space:]])/,
+        '\1<\2>s'
       )
   end # ::replace_shortcuts
 

@@ -1,78 +1,118 @@
 require 'spec_helper'
 
-def expect_to_replace input, output
-  [
-    "#{ input }",
-    "blah #{ input }",
-    "#{ input } blah",
-    "blah\n#{ input }\nblah",
-  ].each do |str|
-    expect( Cmds.replace_shortcuts input ).to eq output
-  end
-end
-
 describe 'Cmds::replace_shortcuts' do
+  meth = Cmds.method(:replace_shortcuts)
+  
   it "should replace %s with <%= arg %>" do
-    expect_to_replace "%s", "<%= arg %>"
+    expect_map meth, {
+      ["%s"]              => "<%= arg %>",
+      ["blah %s"]         => "blah <%= arg %>",
+      ["%s blah"]         => "<%= arg %> blah",
+      ["blah\n%s\nblah"]  => "blah\n<%= arg %>\nblah",
+      ["%s %s"]           => "<%= arg %> <%= arg %>",
+    }
   end
-
+  
   it "should replace %%s with %s (escaping)" do
-    expect_to_replace "%%s", "%s"
+    expect_map meth, {
+      ["%%s"]              => "%s",
+      ["blah %%s"]         => "blah %s",
+      ["%%s blah"]         => "%s blah",
+      ["blah\n%%s\nblah"]  => "blah\n%s\nblah",
+      ["%%s %%s"]          => "%s %s",
+      ["%%%s"]             => "%%s",
+    }
   end
-
-it "should replace %%%s with %%s (escaping)" do
-    expect_to_replace "%%%s", "%%s"
-  end
-
+   
   it "should replace %{key} with <%= key %>" do
-    expect_to_replace "%{key}", "<%= key %>"
+    expect_map meth, {
+      ["%{key}"]              => "<%= key %>",
+      ["blah %{key}"]         => "blah <%= key %>",
+      ["%{key} blah"]         => "<%= key %> blah",
+      ["blah\n%{key}\nblah"]  => "blah\n<%= key %>\nblah",
+      ["%{x} %{y}"]           => "<%= x %> <%= y %>",
+    }
   end
-
-  it "should replace %%{key} with %{key} (escaping)" do
-    expect_to_replace '%%{key}', '%{key}'
-  end
-
-  it "should replace %%%{key} with %%{key} (escaping)" do
-    expect_to_replace '%%%{key}', '%%{key}'
-  end
-
+  
   it "should replace %{key?} with <%= key? %>" do
-    expect_to_replace "%{key?}", "<%= key? %>"
+    expect_map meth, {
+      ["%{key?}"]              => "<%= key? %>",
+      ["blah %{key?}"]         => "blah <%= key? %>",
+      ["%{key?} blah"]         => "<%= key? %> blah",
+      ["blah\n%{key?}\nblah"]  => "blah\n<%= key? %>\nblah",
+      ["%{x?} %{y?}"]          => "<%= x? %> <%= y? %>",
+    }
   end
-
+  
+  it "should replace %%{key} with %{key} (escaping)" do
+    expect_map meth, {
+      ["%%{key}"]              => "%{key}",
+      ["blah %%{key}"]         => "blah %{key}",
+      ["%%{key} blah"]         => "%{key} blah",
+      ["blah\n%%{key}\nblah"]  => "blah\n%{key}\nblah",
+      ["%%{x} %%{y}"]          => "%{x} %{y}",
+      ["%%%{key}"]             => "%%{key}",
+    }
+  end
+  
   it "should replace %%{key?} with %{key?} (escaping)" do
-    expect_to_replace '%%{key?}', '%{key?}'
+    expect_map meth, {
+      ["%%{key?}"]              => "%{key?}",
+      ["blah %%{key?}"]         => "blah %{key?}",
+      ["%%{key?} blah"]         => "%{key?} blah",
+      ["blah\n%%{key?}\nblah"]  => "blah\n%{key?}\nblah",
+      ["%%{x?} %%{y?}"]         => "%{x?} %{y?}",
+      ["%%%{key?}"]             => "%%{key?}",
+    }
   end
-
-  it "should replace %%%{key?} with %%{key?} (escaping)" do
-    expect_to_replace '%%%{key?}', '%%{key?}'
-  end
-
+   
   it "should replace %<key>s with <%= key %>" do
-    expect_to_replace "%<key>s", "<%= key %>"
+    expect_map meth, {
+      ["%<key>s"]              => "<%= key %>",
+      ["blah %<key>s"]         => "blah <%= key %>",
+      ["%<key>s blah"]         => "<%= key %> blah",
+      ["blah\n%<key>s\nblah"]  => "blah\n<%= key %>\nblah",
+      ["%<x>s %<y>s"]          => "<%= x %> <%= y %>",
+    }
   end
-
-  it "should replace %%<key>s with %<key>s (escaping)" do
-    expect_to_replace "%%<key>s", "%<key>s"
-  end
-
-  it "should replace %%%<key>s with %%<key>s (escaping)" do
-    expect_to_replace "%%%<key>s", "%%<key>s"
-  end
-
+  
   it "should replace %<key?>s with <%= key? %>" do
-    expect_to_replace '%<key?>s', '<%= key? %>'
+    expect_map meth, {
+      ["%<key?>s"]              => "<%= key? %>",
+      ["blah %<key?>s"]         => "blah <%= key? %>",
+      ["%<key?>s blah"]         => "<%= key? %> blah",
+      ["blah\n%<key?>s\nblah"]  => "blah\n<%= key? %>\nblah",
+      ["%<x?>s %<y?>s"]         => "<%= x? %> <%= y? %>",
+    }
   end
-
+  
+  it "should replace %%<key>s with %<key>s (escaping)" do
+    expect_map meth, {
+      ["%%<key>s"]              => "%<key>s",
+      ["blah %%<key>s"]         => "blah %<key>s",
+      ["%%<key>s blah"]         => "%<key>s blah",
+      ["blah\n%%<key>s\nblah"]  => "blah\n%<key>s\nblah",
+      ["%%<x>s %%<y>s"]         => "%<x>s %<y>s",
+      ["%%%<key>s"]             => "%%<key>s",
+    }
+  end
+  
   it "should replace %%<key?>s with %<key?>s (escaping)" do
-    expect_to_replace '%%<key?>s', '%<key?>s'
+    expect_map meth, {
+      ["%%<key?>s"]              => "%<key?>s",
+      ["blah %%<key?>s"]         => "blah %<key?>s",
+      ["%%<key?>s blah"]         => "%<key?>s blah",
+      ["blah\n%%<key?>s\nblah"]  => "blah\n%<key?>s\nblah",
+      ["%%<x?>s %%<y?>s"]        => "%<x?>s %<y?>s",
+      ["%%%<key?>s"]             => "%%<key?>s",
+    }
   end
-
-  it "should replace %%%<key?>s with %%<key?>s (escaping)" do
-    expect_to_replace '%%%<key?>s', '%%<key?>s'
-  end
-
+  
+  
   it "should not touch % that don't fit the shortcut sytax" do
-    expect( Cmds.replace_shortcuts "50%" ).to eq "50%"
+    expect_map meth, {
+      ["50%"]                     => "50%",
+      ["50%savings!"]             => "50%savings!",
+    }
   end
 end
