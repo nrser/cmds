@@ -23,6 +23,7 @@ class Cmds
   # =============
 
   # create a new Cmd from template and subs and call it
+  # @return [Result]
   def self.capture template, *subs, &input_block
     new(template, options(subs, input_block)).capture
   end

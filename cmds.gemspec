@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["neil@ztkae.com"]
   spec.summary       = %q{helps read, write and remember commands.}
   # spec.description   = %q{TODO: Write a longer description. Optional.}
-  spec.homepage      = ""
+  spec.homepage      = "https://github.com/nrser/cmds"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
@@ -25,4 +25,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "pastel"
+  spec.add_development_dependency "yard"
+  spec.add_development_dependency "redcarpet"
 end
