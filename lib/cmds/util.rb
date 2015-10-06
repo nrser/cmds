@@ -89,49 +89,47 @@ class Cmds
     end
   end # ::expand_sub
 
-  # substitute values into a command, escaping them for the shell and
-  # offering convenient expansions for some structures.
+  # substitute values into a command template, escaping them for the shell and
+  # offering convenient expansions for some structures. uses ERB templating,
+  # so logic is supported as well.
   # 
-  # `cmd` is a string that can be substituted via ruby's `%` operator, like
+  # check out the {file:README.md#substitutions README} for details on use.
   # 
-  #     "git diff %s"
+  # @param template [String] command template with token to be replaced /
+  #     expanded / escaped.
   # 
-  # for positional substitution, or 
-  # 
-  #     "git diff %{path}"
-  # 
-  # for keyword substitution.
-  # 
-  # `subs` is either:
-  # 
-  # -   an Array when `cmd` has positional placeholders
-  # -   a Hash when `cmd` has keyword placeholders.
-  # 
-  # the elements of the `subs` array or values of the `subs` hash are:
-  # 
-  # -   strings that are substituted into `cmd` after being escaped:
+  # @param args [Array] positional substitutions for occurances of
+  #     - `<%= arg %>`
+  #     - `%s`
   #     
-  #         sub "git diff %{path}", path: "some path/to somewhere"
-  #         # => 'git diff some\ path/to\ somewhere'
+  #     tokens in the `template` parameter.
   # 
-  # -   hashes that are expanded into options:
+  # @param kwds [Hash] keyword subsitutions for occurances of the form
   #     
-  #         sub "psql %{opts} %{database} < %{filepath}",
-  #           database: "blah",
-  #           filepath: "/where ever/it/is.psql",
-  #           opts: {
-  #             username: "bingo bob",
-  #             host: "localhost",
-  #             port: 12345,
-  #           }
-  #         # => 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
+  #     - `<%= key %>`
+  #     - `%{key}`
+  #     - `%<key>s`
+  #     
+  #     as well as optional
   # 
-  def self.sub cmd, args = [], kwds = {}
+  #     - `<%= key? %>`
+  #     - `%{key?}`
+  #     - `%<key?>s`
+  #     
+  #     tokens in the `template` parameter (where `key` is replaced with the
+  #     symbol name in the hash).
+  #
+  # @return [String] formated command string suitable for execution.
+  # 
+  # @raise [TypeError] if `args` is not an {Array}.
+  # @raise [TypeError] if `kwds` is not a {Hash}.
+  # 
+  def self.sub template, args = [], kwds = {}
     raise TypeError.new("args must be an Array") unless args.is_a? Array
     raise TypeError.new("kwds must be an Hash") unless kwds.is_a? Hash
 
     context = ERBContext.new(args, kwds)
-    erb = ShellEruby.new(replace_shortcuts cmd)
+    erb = ShellEruby.new replace_shortcuts(template)
 
     NRSER.squish erb.result(context.get_binding)
   end # ::sub

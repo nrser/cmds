@@ -88,6 +88,89 @@ Cmds 'PGPASSWORD=%{password} pg_dump %{opts} %{database} > %{filepath}',
 
 
 
+## architecture
+
+Cmds is based around a central `Cmds` class that takes a template for the command and a few options and operates by either wrapping the results in a `Cmds::Result` instance or streaming the results to `IO` objects or handler blocks. the Cmds` `augmented with a health helping of connivence methods for creating and executing a `Cmds` instance in common ways.
+
+### constructor
+
+the `Cmds` constructor looks like
+
+```
+Cmds(template:String, opts:Hash)
+```
+
+a brief bit about the arguments:
+
+* `template`
+    * a `String` template processed with ERB against positional and keyword arguments.
+* `opts`
+    * `:args`
+        * an `Array` of positional substitutions for the template.
+        * assigned to `@args`.
+        * defaults to an empty `Array`.
+    * `:kwds`
+        * a `Hash` of keyword substitutions for the template.
+        * assigned to `@kwds`.
+        * defaults to an empty `Hash`.
+    * `:input`
+        * a `String` to provide as standard input.
+        * assigned to `@input`.
+        * defaults to `nil`.
+    * `:assert`
+        * if this tests true, the execution of the command will raise an error on a nonzero exit status.
+        * assigned to `@assert`.
+        * defaults to `False`.
+
+### execution
+
+you can provide three types of arguments when executing a command:
+
+1. positional arguments for substitution
+2. keyword arguments for substitution
+3. input to stdin
+
+all `Cmds` instance execution methods have the same form for accepting these:
+
+1. positional arguments are provided in an optional array that must be the first argument:
+    
+    `Cmds "cp <%= arg %> <%= arg %>", [src_path, dest_path]`
+    
+    note that the arguments need to be enclosed in square braces. Cmds does **NOT** use *splat for positional arguments because it would make a `Hash` final parameter ambiguous.
+    
+2. keyword arguments are provided as optional hash that must be the last argument:
+    
+    `Cmds "cp <%= src %> <%= dest %>", src: src_path, dest: dest_path`
+    
+    in this case, curly braces are not required since Ruby turns the trailing keywords into a `Hash` provided as the last argument (or second-to-last argument in the case of a block included in the method signature).
+    
+3. input and output is handled with blocks:
+    
+    `Cmds(“wc -l”){ “one\ntwo\nthree\n” } 
+    
+    Cmds.stream './test/tick.rb <%= times %>', times: times do |io|
+      io.on_out do |line|
+        # do something with the output line
+      end
+    
+      io.on_err do |line|
+        # do something with the error line
+      end
+    end`
+
+
+
+## templates
+
+command templates are processed with [eRuby](https://en.wikipedia.org/wiki/ERuby), which many people know as [ERB](http://ruby-doc.org/stdlib-2.2.2/libdoc/erb/rdoc/ERB.html). you may know ERB from [Rails](http://guides.rubyonrails.org/layouts_and_rendering.html).
+
+actually, Cmds uses [Erubis](http://www.kuwata-lab.com/erubis/). which is the same thing Rails uses; calm down.
+
+this takes care of a few things:
+
+1. automatically shell escape values substituted into templates with [`Shellwords.escape`](http://ruby-doc.org/stdlib-2.2.2/libdoc/shellwords/rdoc/Shellwords.html#method-c-escape). it doesn't always do the prettiest job, but `Shellwords.escape` is part of Ruby's standard library and seems to work pretty well.
+2. allow for fairly nice and readable logical structures like `if` / `else` in the command template. you've probably built html like this at some point. of course, the full power of Ruby is also available, though you probably won't find yourself needing much beyond some simple control structures.
+
 ## substitutions
 
 substitutions can be positional, keyword, or both.
@@ -304,7 +387,19 @@ prod_playbook.call playbook: "setup.yml", inventory: "inventory/prod"
 
 
 
+## input
+
+```
+c = Cmds.new("wc", input: "blah blah blah).call
+```
+
+
+
 ## future..?
+
+### exec
+
+want to be able to use to exec commands
 
 ### formatters
 
@@ -330,4 +425,3 @@ other formatters could include
 * `l` or `,` for comma-separated list (which some commands like as input)
 * `y` for YAML
 * `p` for path, joining with `File.join`
-
