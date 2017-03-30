@@ -1,3 +1,5 @@
+require_relative 'spawn'
+
 class Cmds
   # executes the command and returns a {Cmds::Result} with the captured
   # outputs.
@@ -40,7 +42,7 @@ class Cmds
 
     Cmds.debug "calling Cmds#really_stream..."
     
-    status = really_stream cmd do |io|
+    status = self.class.spawn cmd do |io|
       # send the input to stream, which sends it to spawn
       io.in = input
 

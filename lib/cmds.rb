@@ -1,7 +1,5 @@
 # stdlib
 require 'shellwords'
-require 'open3'
-require 'thread'
 
 # deps
 require 'nrser'

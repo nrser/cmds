@@ -10,8 +10,7 @@ describe Cmds do
     
     expect(
       Cmds.new("head %{opts} %s").
-        curry("/dev/random", opts: {c: 64}).
-        to_s
+        prepare("/dev/random", opts: {c: 64})
     ).to eq "head -c 64 /dev/random"
     
     expect(Cmds.chomp! "echo %s", 'here').to eq 'here'
