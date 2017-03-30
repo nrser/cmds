@@ -1,4 +1,9 @@
 # util functions
+
+require 'shellwords'
+
+require_relative 'util/tokenize_options'
+
 class Cmds
   # class methods
   # =============
@@ -38,7 +43,11 @@ class Cmds
   # i can't think of any right now, but i swear i've seen commands that take
   # opts that way.
   # 
-  def self.expand_option_hash hash
+  def self.expand_option_hash hash, opts = {}
+    opts = {
+      array_mode: :csv,
+    }.merge opts
+    
     hash.map {|key, values|
       # keys need to be strings
       key = key.to_s unless key.is_a? String
@@ -75,6 +84,8 @@ class Cmds
       end
     }.flatten.join ' '
   end # ::expand_option_hash
+  
+  
 
   # expand one of the substitutions
   def self.expand_sub sub
@@ -83,7 +94,7 @@ class Cmds
       # nil is just an empty string, NOT an empty string bash token
       ''
     when Hash
-      expand_option_hash sub
+      tokenize_options sub
     else
       esc sub.to_s
     end
@@ -131,60 +142,49 @@ class Cmds
     context = ERBContext.new(args, kwds)
     erb = ShellEruby.new replace_shortcuts(template)
 
-    NRSER.squish erb.result(context.get_binding)
+    erb.result(context.get_binding)
   end # ::sub
+  
+  # substitute parameters into `@template`.
+  # 
+  # @param *args (see #capture)
+  # @param **kwds (see #capture)
+  # 
+  # @return [String]
+  #   the prepared command string.
+  # 
+  def sub *args, **kwds
+    context = ERBContext.new((@args + args), @kwds.merge(kwds))
+    erb = ShellEruby.new self.class.replace_shortcuts(@template)
 
-  def self.options subs, input_block
-    args = []
-    kwds = {}
-    input = input_block.nil? ? nil : input_block.call
-
-    case subs.length
-    when 0
-      # nothing to do
-    when 1
-      # can either be a hash, which is interpreted as a keywords,
-      # or an array, which is interpreted as positional arguments
-      case subs[0]
-      when Hash
-        kwds = subs[0]
-
-      when Array
-        args = subs[0]
-
-      else
-        raise TypeError.new NRSER.squish <<-BLOCK
-          first *subs arg must be Array or Hash, not #{ subs[0].inspect }
-        BLOCK
-      end
-
-    when 2
-      # first arg needs to be an array, second a hash
-      unless subs[0].is_a? Array
-        raise TypeError.new NRSER.squish <<-BLOCK
-          first *subs arg needs to be an array, not #{ subs[0].inspect }
-        BLOCK
-      end
-
-      unless subs[1].is_a? Hash
-        raise TypeError.new NRSER.squish <<-BLOCK
-          second *subs arg needs to be a Hash, not #{ subs[1].inspect }
-        BLOCK
-      end
-
-      args, kwds = subs
+    erb.result(context.get_binding)
+  end
+  
+  # formats a command string 
+  def self.format string, with = :squish
+    case with
+    when :squish
+      NRSER.squish string
+      
+    when :pretty
+      pretty_format string
+    
     else
-      raise ArgumentError.new NRSER.squish <<-BLOCK
-        must provide one or two *subs arguments, received #{ 1 + subs.length }
-      BLOCK
+      with.call string
     end
-
-    return {
-      args: args,
-      kwds: kwds,
-      input: input,
-    }
-  end # ::options
+  end
+  
+  def self.pretty_format string
+    string.lines.map {|line|
+      line = line.rstrip
+      
+      if line.end_with? '\\'
+        line
+      else
+        line + ' \\'
+      end
+    }.join("\n")
+  end
 
   def self.replace_shortcuts template
     template
@@ -224,8 +224,28 @@ class Cmds
   # ================
 
   # returns a new `Cmds` with the subs and input block merged in
-  def curry *subs, &input_block
-    self.class.new @template, merge_options(subs, input_block)
+  def curry *args, **kwds, &input_block
+    self.class.new @template, {
+      args: (@args + args),
+      kwds: (@kwds.merge kwds),
+      input: (input || @input),
+    }
+  end
+  
+  # prepare a shell-safe command string for execution.
+  # 
+  # @param *args (see #capture)
+  # @param **kwds (see #capture)
+  # 
+  # @return [String]
+  #   the prepared command string.
+  # 
+  def prepare *args, **kwds
+    self.class.format sub(*args, **kwds), @format
+  end
+  
+  def to_s
+    prepare
   end
 
   private
@@ -240,7 +260,7 @@ class Cmds
       # existing ones
       options[:args] = @args + options[:args]
       # the new kwds are created by merging the provided kwds into the
-      # exising ones (new values override previous)
+      # existing ones (new values override previous)
       options[:kwds] = @kwds.merge options[:kwds]
       # if there is input present via the provided block, it is used.
       # otherwise, previous input is used, which may be `nil`

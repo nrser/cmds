@@ -20,7 +20,19 @@ require "cmds/util"
 require "cmds/version"
 
 class Cmds
-  attr_reader :template, :args, :kwds, :input, :assert
+  attr_reader :template
+  
+  attr_reader :args
+  
+  attr_reader :kwds
+  
+  attr_reader :input
+  
+  attr_reader :assert
+  
+  attr_reader :env
+  
+  # attr_reader :format
 
   def initialize template, opts = {}
     Cmds.debug "Cmds constructed",
@@ -32,5 +44,7 @@ class Cmds
     @kwds = opts[:kwds] || {}
     @input = opts[:input] || nil
     @assert = opts[:assert] || false
+    @env = opts[:env] || {}
+    @format = opts[:format] || :squish
   end # #initialize
 end

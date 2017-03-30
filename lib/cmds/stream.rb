@@ -20,16 +20,15 @@ class Cmds
     cmd = Cmds.sub @template, options[:args], options[:kwds]
 
     # call the internal function
-    really_stream cmd, options, &input_block
+    really_stream cmd, &input_block
   end
 
   private
 
     # do the actual work...
-    def really_stream cmd, options, &input_block
+    def really_stream cmd, &input_block
       Cmds.debug "entering Cmds#really_stream",
         cmd: cmd,
-        options: options,
         input_block: input_block
 
       # create the handler that will be yielded to the input block

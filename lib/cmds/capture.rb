@@ -1,26 +1,48 @@
 class Cmds
-  # invokes the command and returns a Result with the captured outputs
-  def capture *subs, &input_block
+  # executes the command and returns a {Cmds::Result} with the captured
+  # outputs.
+  # 
+  # @param [Array<Object>] *args
+  #   positional parameters to append to those in `@args` for substitution 
+  #   into the command string.
+  # 
+  # @param [Hash{Symbol => Object}] **kwds
+  #   keyword parameters that override those in `@kwds` for substitution
+  #   into the command string.
+  # 
+  # @param [#call] &input
+  #   optional block that returns a string or readable object to override
+  #   `@input`.
+  # 
+  # @return [Cmds::Result]
+  #   result of execution with command string, status, stdout and stderr.
+  # 
+  def capture *args, **kwds, &input
     Cmds.debug "entering Cmds#capture",
-      subs: subs,
-      input_block: input_block
-
-    # merge any stored args and kwds and replace input if provided
-    options = merge_options subs, input_block
-    Cmds.debug "merged options:",
-      options: options
-
-    # build the command string
-    cmd = Cmds.sub @template, options[:args], options[:kwds]
-    Cmds.debug "built command string: #{ cmd.inspect }"
-
+      args: args,
+      kwds: kwds,
+      input: input
+    
+    # prepare the command string
+    cmd = prepare *args, **kwds
+    
+    # extract input from block via `call` if one is provided,
+    # otherwise default to instance variable (which may be `nil`)
+    input = input.nil? ? @input : input.call
+    
+    Cmds.debug "prepared",
+      cmd: cmd,
+      input: input
+    
+    # strings output will be concatenated onto
     out = ''
     err = ''
 
     Cmds.debug "calling Cmds#really_stream..."
-    status = really_stream cmd, options do |io|
+    
+    status = really_stream cmd do |io|
       # send the input to stream, which sends it to spawn
-      io.in = options[:input]
+      io.in = input
 
       # and concat the output lines as they come in
       io.on_out do |line|
@@ -31,6 +53,7 @@ class Cmds
         err += line
       end
     end
+    
     Cmds.debug "Cmds#really_stream completed",
       status: status
 

@@ -112,9 +112,9 @@ describe "Cmds::sub" do
       expect(Cmds.sub tpl, [], x: "ex", z: "zee").to eq "blah ex zee"
     end
     
-    it "should omit a sub if it's value is false" do
-      expect(Cmds.sub "%{x?}", [], x: false).to eq ""
-    end
+    # it "should omit a sub if it's value is false" do
+    #   expect(Cmds.sub "%{x?}", [], x: false).to eq ""
+    # end
   end
 
   context "errors" do

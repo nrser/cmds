@@ -86,11 +86,13 @@ class Cmds
   #
   # @raise [SystemCallError] if the command fails (non-zero exit status).
   #
-  def self.out! template, *subs, &input_block
+  def self.out! template, *args, **kwds, &input
     Cmds.new(
       template,
-      options(subs, input_block).merge!(assert: true),
-    ).capture.out
+      args: args,
+      kwds: kwds,
+      input: input,
+    ).out!
   end
 
 
@@ -200,18 +202,15 @@ class Cmds
   # @see #capture
   # @see Result#out
   #
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
+  # @param args [Array] see {.capture}.
+  # @param kwds [Proc] see {.capture}.
   #
   # @return [String] the command's stdout.
   #
   # @raise [SystemCallError] if the command fails (non-zero exit status).
   #
-  def out! *subs, &input_block
-    self.class.new(
-      @template,
-      merge_options(subs, input_block).merge!(assert: true),
-    ).capture.out
+  def out! *args, **kwds, &input
+    capture(*args, **kwds, &input).assert.out
   end
 
 
@@ -247,8 +246,8 @@ class Cmds
   #
   # @raise [SystemCallError] if the command fails (non-zero exit status).
   #
-  def chomp! *subs, &input_block
-    out!(*subs, &input_block).chomp
+  def chomp! *args, **kwds, &input
+    out!(*args, **kwds, &input).chomp
   end
 
 

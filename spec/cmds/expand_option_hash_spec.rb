@@ -14,6 +14,10 @@ describe "Cmds::expand_option_hash_spec" do
     it "handles array value" do
       expect(Cmds.expand_option_hash x: [1, 2, 3]).to eq "-x 1 -x 2 -x 3"
     end
+    
+    # it "converts `true` to bare option" do
+    #   expect(Cmds.expand_option_hash x: true).to eq "-x"
+    # end
   end # single char key
 
   context "multiple single char keys" do
