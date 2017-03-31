@@ -17,3 +17,11 @@ test/version_tmp
 tmp
 
 ref/repos
+##############################################################################
+# BEGIN Qb.gitingore
+#
+# generated qb playbooks
+.qb-playbook.yml
+#
+# END Qb.gitingore
+##############################################################################
