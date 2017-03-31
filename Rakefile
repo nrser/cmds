@@ -57,14 +57,14 @@ namespace :debug do
   end
 
   task :proxy => :conf do
-    Cmds.new("./test/questions.rb").proxy
+    Cmds::Cmd.new("./test/questions.rb").proxy
   end
 
   namespace :capture do
     desc "capture with io-like input with debugging enabled"
     task :io_input => :conf do
       File.open "./test/lines.txt" do |f|
-        Cmds.new("./test/echo_cmd.rb", input: f).capture
+        Cmds::Cmd.new("./test/echo_cmd.rb", input: f).capture
       end
     end
   end # ns capture

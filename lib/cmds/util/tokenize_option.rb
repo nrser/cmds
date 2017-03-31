@@ -5,7 +5,7 @@ using NRSER
 
 require_relative "defaults"
 
-class Cmds
+module Cmds
   # turn an option name and value into an array of shell-escaped string
   # token suitable for use in a command.
   # 

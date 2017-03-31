@@ -1,4 +1,4 @@
-class Cmds
+module Cmds
   class ERBContext < BasicObject
     def initialize args, kwds
       @args = args
@@ -10,7 +10,7 @@ class Cmds
       if args.empty? && block.nil?
         if sym.to_s[-1] == '?'
           key = sym.to_s[0...-1].to_sym
-          # allow `false` to be ommited as well as missing and `nil`
+          # allow `false` to be omitted as well as missing and `nil`
           # by returning `nil` if the value is "false-y"
           @kwds[key] if @kwds[key]
         else
@@ -29,4 +29,4 @@ class Cmds
       @args.fetch(@arg_index).tap {@arg_index += 1}
     end
   end # end ERBContext
-end # class Cmds
+end # module Cmds

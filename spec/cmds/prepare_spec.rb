@@ -1,9 +1,9 @@
 require 'spec_helper'
 
-describe "Cmds::sub" do
+describe "Cmds.prepare" do
   it "should work with a keyword substitutions" do
     expect(
-      Cmds.sub "psql <%= opts %> <%= database %> < <%= filepath %>",
+      Cmds.prepare "psql <%= opts %> <%= database %> < <%= filepath %>",
         [],
         database: "blah",
         filepath: "/where ever/it/is.psql",
@@ -17,41 +17,39 @@ describe "Cmds::sub" do
 
   it "should work with positional substitutions" do
     expect(
-      Cmds.sub "psql <%= arg %> <%= arg %> < <%= arg %>", [
+      Cmds.prepare "psql <%= arg %> <%= arg %> < <%= arg %>",
         {
           username: "bingo bob",
           host: "localhost",
           port: 12345,
         },
         "blah",
-        "/where ever/it/is.psql",
-      ]
+        "/where ever/it/is.psql"
     ).to eq 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
   end
 
   it "should work with no arguments" do
     expect(
-      Cmds.sub "blah <% if true %>blow<% end %>"
+      Cmds.prepare "blah <% if true %>blow<% end %>"
     ).to eq "blah blow"
   end
-
+  
   it "should work with positional and keyword substitutions" do
     expect(
-      Cmds.sub "blah <%= arg %> <%= y %>", ["ex"], y: "why"
+      Cmds.prepare "blah <%= arg %> <%= y %>", "ex", y: "why"
     ).to eq "blah ex why"
   end
-
+  
   it "should work with direct reference to args" do
     expect(
-      Cmds.sub "psql <%= @args[2] %> <%= @args[0] %> < <%= @args[1] %>", [
+      Cmds.prepare "psql <%= @args[1] %> <%= @args[0] %> < <%= @args[2] %>",
         "blah",
-        "/where ever/it/is.psql",
         {
           username: "bingo bob",
           host: "localhost",
           port: 12345,
         },
-      ]
+        "/where ever/it/is.psql"
     ).to eq 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
   end
 
@@ -68,7 +66,7 @@ describe "Cmds::sub" do
 
     it "should work when value is present" do
       expect(
-        Cmds.sub tpl, [], current_host: 'xyz',
+        Cmds.prepare tpl, current_host: 'xyz',
                           domain: 'com.nrser.blah',
                           filepath: '/tmp/export.plist'
       ).to eq "defaults -currentHost xyz export com.nrser.blah /tmp/export.plist"
@@ -76,7 +74,7 @@ describe "Cmds::sub" do
 
     it "should work when value is missing" do
       expect(
-        Cmds.sub tpl, [], domain: 'com.nrser.blah',
+        Cmds.prepare tpl, domain: 'com.nrser.blah',
                           filepath: '/tmp/export.plist'
       ).to eq "defaults export com.nrser.blah /tmp/export.plist"
     end
@@ -94,7 +92,7 @@ describe "Cmds::sub" do
 
     it "should loop correctly and escape values" do
       expect(
-        Cmds.sub tpl, [], domain: "com.nrser.blah",
+        Cmds.prepare tpl, domain: "com.nrser.blah",
                           key: 'k',
                           values: {x: '<ex>', y: 'why'}
       ).to eq "defaults write com.nrser.blah k -dict x \\<ex\\> y why"
@@ -109,54 +107,44 @@ describe "Cmds::sub" do
     }
 
     it "should omit the missing subs" do
-      expect(Cmds.sub tpl, [], x: "ex", z: "zee").to eq "blah ex zee"
+      expect(Cmds.prepare tpl, x: "ex", z: "zee").to eq "blah ex zee"
     end
     
-    # it "should omit a sub if it's value is false" do
-    #   expect(Cmds.sub "%{x?}", [], x: false).to eq ""
-    # end
+    it "should omit a sub if it's value is false" do
+      expect(Cmds.prepare "%{x?}", x: false).to eq ""
+    end
   end
 
   context "errors" do
-    it "should raise TypeError if subs in not an array or a hash" do
-      expect{Cmds.sub "a <%= b %> <%= c %>", "dee!"}.to raise_error TypeError
-    end
-
     it "should error when a kwarg is missing" do
       expect {
-        Cmds.sub "a <%= b %> <%= c %>", [], b: 'bee!'
+        Cmds.prepare "a <%= b %> <%= c %>", b: 'bee!'
       }.to raise_error KeyError
     end
 
     it "should error when an arg is missing" do
       expect {
-        Cmds.sub "a <%= arg %> <%= arg %>", ['bee!']
+        Cmds.prepare "a <%= arg %> <%= arg %>", 'bee!'
       }.to raise_error IndexError
-    end
-
-    it "should error when more than two args are passed" do
-      expect {
-        Cmds.sub "blah", 1, 2, 3
-      }.to raise_error ArgumentError
     end
   end # errors
 
   context "shortcuts" do
     it "should replace %s" do
       expect(
-        Cmds.sub "./test/echo_cmd.rb %s", ["hello world!"]
+        Cmds.prepare "./test/echo_cmd.rb %s", "hello world!"
       ).to eq './test/echo_cmd.rb hello\ world\!'
     end
 
     it "should replace %{key}" do
       expect(
-        Cmds.sub "./test/echo_cmd.rb %{key}", [], key: "hello world!"
+        Cmds.prepare "./test/echo_cmd.rb %{key}", key: "hello world!"
       ).to eq './test/echo_cmd.rb hello\ world\!'
     end
 
     it "should replace %<key>s" do
       expect(
-        Cmds.sub "./test/echo_cmd.rb %<key>s", [], key: "hello world!"
+        Cmds.prepare "./test/echo_cmd.rb %<key>s", key: "hello world!"
       ).to eq './test/echo_cmd.rb hello\ world\!'
     end
   end # shortcuts

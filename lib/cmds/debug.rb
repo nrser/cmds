@@ -1,7 +1,7 @@
 require 'logger'
 
 # debug logging stuff
-class Cmds
+module Cmds
 
   module Debug
     # constants
@@ -98,4 +98,4 @@ class Cmds
     return unless Debug.on?
     Debug.logger.debug Debug.format(msg, values)
   end
-end # class Cmds
+end # module Cmds

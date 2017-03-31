@@ -1,6 +1,10 @@
-class Cmds
-  # a {Result} is a simple data structure returned from calling {Cmds#capture} 
-  # on a {Cmds} instance.
+require 'nrser/refinements'
+
+using NRSER
+
+module Cmds
+  # a simple data structure returned from calling {Cmds#capture} 
+  # on a {Cmd} instance.
   # 
   # it contains the exit status code, standard output and standard error,
   # as well as the actual string command issued (after all substitutions).
@@ -52,7 +56,7 @@ class Cmds
     #
     def assert
       if error?
-        msg = NRSER.squish <<-BLOCK
+        msg = <<-BLOCK.squish
           command `#{ @cmd }` exited with status #{ @status }
           and stderr #{ err.inspect }
         BLOCK
@@ -61,5 +65,5 @@ class Cmds
       end
       self
     end # raise_error
-  end
-end # class Cmds
+  end # Result
+end # Cmds

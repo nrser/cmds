@@ -3,269 +3,193 @@
 # global methods
 # ==============
 
-# proxies to `Cmds::capture`
-def Cmds *args, &block
-  Cmds.capture *args, &block
+# @see Cmds.capture
+def Cmds template, *args, **kwds, &input_block
+  Cmds.capture template, *args, **kwds, &input_block
 end
 
-# proxies to `Cmds::ok?`
-def Cmds? *args, &block
-  Cmds.ok? *args, &block
+
+# @see Cmds.ok?
+def Cmds? template, *args, **kwds, &io_block
+  Cmds.ok? template, *args, **kwds, &io_block
 end
 
-# proxies to `Cmds::assert`
-def Cmds! *args, &block
-  Cmds.assert *args, &block
+
+# @see Cmds.assert
+def Cmds! template, *args, **kwds, &io_block
+  Cmds.assert template, *args, **kwds, &io_block
 end
 
-class Cmds
-  # class methods
-  # =============
 
-  # create a new Cmd from template and subs and call it
+module Cmds
+  # create a new {Cmd} instance with the template and parameters and
+  # calls {Cmd#prepare}.
+  # 
+  # @param [String] template
+  #   ERB template parameters are rendered into to create the command string.
+  # 
+  # @param [Array<Object>] *args
+  #   positional parameters for rendering into the template.
+  # 
+  # @param [Hash{Symbol => Object}] **kwds
+  #   keyword parameters for rendering into the template.
+  # 
+  # @return [String]
+  #   rendered and formatted command string ready to be executed.
+  # 
+  def self.prepare template, *args, **kwds
+    Cmd.new(template).prepare *args, **kwds
+  end
+  
+  
+  # create a new {Cmd} from template with parameters and call {Cmds#capture}
+  # on it.
+  # 
+  # @param template (see .prepare)
+  # @param *args (see .prepare)
+  # @param **kwds (see .prepare)
+  # 
+  # @param [#call] &input_block
+  #   optional block that returns a string or IO-like readable object to be
+  #   used as input for the execution.
+  # 
   # @return [Result]
-  def self.capture template, *subs, &input_block
-    new(template, options(subs, input_block)).capture
+  #   result with command string, exist status, stdout and stderr.
+  # 
+  def self.capture template, *args, **kwds, &input_block
+    Cmd.new(template).capture *args, **kwds, &input_block
   end
-
-  def self.ok? template, *subs, &input_block
-    new(template, options(subs, input_block)).ok?
+  
+  
+  # create a new {Cmd} from template with parameters and call {Cmd#ok?}
+  # on it.
+  # 
+  # @param template (see .prepare)
+  # @param *args (see .prepare)
+  # @param **kwds (see .prepare)
+  # @param &io_block (see Cmds.spawn)
+  # 
+  # @return [Result]
+  #   result with command string, exist status, stdout and stderr.
+  # 
+  def self.ok? template, *args, **kwds, &io_block
+    Cmd.new(template).ok? *args, **kwds, &io_block
   end
-
-  def self.error? template, *subs, &input_block
-    new(template, options(subs, input_block)).error?
+  
+  
+  def self.error? template, *args, **kwds, &io_block
+    Cmd.new(template).error? *args, **kwds, &io_block
   end
-
-  def self.assert template, *subs, &input_block
-    new(
-      template,
-      options(subs, input_block).merge!(assert: true)
-    ).capture
+  
+  
+  # create a new {Cmd} and 
+  def self.assert template, *args, **kwds, &io_block
+    Cmd.new(template).capture(*args, **kwds, &io_block).assert
   end
-
+  
+  
   def self.stream template, *subs, &input_block
-    Cmds.new(template).stream *subs, &input_block
+    Cmds::Cmd.new(template).stream *subs, &input_block
   end
-
+  
+  
   def self.stream! template, *subs, &input_block
-    Cmds.new(template, assert: true).stream *subs, &input_block
+    Cmds::Cmd.new(template, assert: true).stream *subs, &input_block
   end # ::stream!
 
-
-  # @api sugar
+  
+  # creates a new {Cmd}, captures and returns stdout
+  # (sugar for `Cmds.capture(template, *args, **kwds, &input_block).out`).
   #
-  # captures and returns stdout
-  # (sugar for `Cmds.capture(*template, *subs, &input_block).out`).
+  # @see Cmd.out
   #
-  # @see .capture
-  # @see Result#out
+  # @param template (see .prepare)
+  # @param *args (see .prepare)
+  # @param **kwds (see .prepare)
+  # @param &input_block (see .capture)
   #
-  # @param template [String] see {.capture}.
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
+  # @return [String]
+  #   the command's stdout.
   #
-  # @return [String] the command's stdout.
-  #
-  def self.out template, *subs, &input_block
-    capture(template, *subs, &input_block).out
+  def self.out template, *args, **kwds, &input_block
+    Cmd.new(template).out *args, **kwds, &input_block
   end
-
-
-  # @api sugar
+  
+  
+  # creates a new {Cmd}, captures and returns stdout. raises an error if the 
+  # command fails.
   #
-  # captures and returns stdout, raising an error if the command fails.
+  # @see Cmd.out!
   #
-  # @see .capture
-  # @see Result#out
+  # @param template (see .prepare)
+  # @param *args (see .prepare)
+  # @param **kwds (see .prepare)
+  # @param &input_block (see .capture)
   #
-  # @param template [String] see {.capture}.
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
+  # @return [String]
+  #   the command's stdout.
   #
-  # @return [String] the command's stdout.
+  # @raise [SystemCallError]
+  #   if the command fails (non-zero exit status).
   #
-  # @raise [SystemCallError] if the command fails (non-zero exit status).
-  #
-  def self.out! template, *args, **kwds, &input
-    Cmds.new(
-      template,
-      args: args,
-      kwds: kwds,
-      input: input,
-    ).out!
+  def self.out! template, *args, **kwds, &input_block
+    Cmd.new(template).out! *args, **kwds, &input_block
   end
-
-
-  # @api sugar
-  #
-  # captures and chomps stdout
-  # (sugar for `Cmds.out(*template, *subs, &input_block).chomp`).
+  
+  
+  # captures a new {Cmd}, captures and chomps stdout
+  # (sugar for `Cmds.out(template, *args, **kwds, &input_block).chomp`).
   #
   # @see .out
   #
-  # @param template [String] see {.capture}.
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
+  # @param template (see .prepare)
+  # @param *args (see .prepare)
+  # @param **kwds (see .prepare)
+  # @param &input_block (see .capture)
   #
-  # @return [String] the command's chomped stdout.
+  # @return [String]
+  #   the command's chomped stdout.
   #
-  def self.chomp template, *subs, &input_block
-    out(template, *subs, &input_block).chomp
+  def self.chomp template, *args, **kwds, &input_block
+    out(template, *args, **kwds, &input_block).chomp
   end
-
-
-  # @api sugar
-  #
+  
+  
   # captures and chomps stdout, raising an error if the command fails.
-  # (sugar for `Cmds.out!(*template, *subs, &input_block).chomp`).
+  # (sugar for `Cmds.out!(template, *args, **kwds, &input_block).chomp`).
   #
   # @see .out!
   #
-  # @param template [String] see {.capture}.
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
+  # @param template (see .prepare)
+  # @param *args (see .prepare)
+  # @param **kwds (see .prepare)
+  # @param &input_block (see .capture)
   #
-  # @return [String] the command's chomped stdout.
+  # @return [String]
+  #   the command's chomped stdout.
   #
-  # @raise [SystemCallError] if the command fails (non-zero exit status).
+  # @raise [SystemCallError]
+  #   if the command fails (non-zero exit status).
   #
-  def self.chomp! template, *subs, &input_block
-    out!(template, *subs, &input_block).chomp
+  def self.chomp! template, *args, **kwds, &input_block
+    out!(template, *args, **kwds, &input_block).chomp
   end
-
-
-  # @api sugar
-  #
+  
+  
   # captures and returns stderr
-  # (sugar for `Cmds.capture(template, *subs, &input_block).err`).
+  # (sugar for `Cmds.capture(template, *args, **kwds, &input_block).err`).
   #
   # @see .capture
-  # @see Result#err
   #
-  # @param template [String] see {.capture}.
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
+  # @param template (see .prepare)
+  # @param *args (see .prepare)
+  # @param **kwds (see .prepare)
+  # @param &input_block (see .capture)
   #
-  # @return [String] the command's stderr.
+  # @return [String]
+  #   the command's stderr.
   #
-  def self.err template, *subs, &input_block
-    capture(template, *subs, &input_block).err
+  def self.err template, *args, **kwds, &input_block
+    capture(template, *args, **kwds, &input_block).err
   end
-
-  # instance methods
-  # ================
-
-  alias_method :call, :capture
-
-  def ok?
-    stream == 0
-  end
-
-  def error?
-    stream != 0
-  end
-
-  # def assert
-  #   capture.raise_error
-  # end
-
-  def proxy
-    stream do |io|
-      io.in = $stdin
-    end
-  end
-
-
-  # @api sugar
-  #
-  # captures and returns stdout
-  # (sugar for `#capture(*subs, &input_block).out`).
-  #
-  # @see #capture
-  # @see Result#out
-  #
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
-  #
-  # @return [String] the command's stdout.
-  #
-  def out *subs, &input_block
-    capture(*subs, &input_block).out
-  end
-
-
-  # @api sugar
-  #
-  # captures and returns stdout
-  # (sugar for `#capture(*subs, &input_block).out`).
-  #
-  # @see #capture
-  # @see Result#out
-  #
-  # @param args [Array] see {.capture}.
-  # @param kwds [Proc] see {.capture}.
-  #
-  # @return [String] the command's stdout.
-  #
-  # @raise [SystemCallError] if the command fails (non-zero exit status).
-  #
-  def out! *args, **kwds, &input
-    capture(*args, **kwds, &input).assert.out
-  end
-
-
-  # @api sugar
-  #
-  # captures and chomps stdout
-  # (sugar for `#out(*subs, &input_block).chomp`).
-  #
-  # @see #out
-  #
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
-  #
-  # @return [String] the command's chomped stdout.
-  #
-  def chomp *subs, &input_block
-    out(*subs, &input_block).chomp
-  end
-
-
-  # @api sugar
-  #
-  # captures and chomps stdout, raising an error if the command failed.
-  # (sugar for `#out!(*subs, &input_block).chomp`).
-  #
-  # @see #capture
-  # @see Result#out
-  #
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
-  #
-  # @return [String] the command's chomped stdout.
-  #
-  # @raise [SystemCallError] if the command fails (non-zero exit status).
-  #
-  def chomp! *args, **kwds, &input
-    out!(*args, **kwds, &input).chomp
-  end
-
-
-  # @api sugar
-  #
-  # captures and returns stdout
-  # (sugar for `#capture(*subs, &input_block).err`).
-  #
-  # @param subs [Array] see {.capture}.
-  # @param input_block [Proc] see {.capture}.
-  #
-  # @see #capture
-  # @see Result#err
-  #
-  # @return [String] the command's stderr.
-  #
-  def err *subs, &input_block
-    capture(*subs, &input_block).err
-  end
-
-end # class Cmds
+end # Cmds

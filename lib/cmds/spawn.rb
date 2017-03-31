@@ -7,12 +7,12 @@ require 'nrser'
 require 'nrser/refinements'
 
 # project
-require_relative 'pipe'
-require_relative 'io_handler'
+require 'cmds/pipe'
+require 'cmds/io_handler'
 
 using NRSER
 
-class Cmds
+module Cmds
   # internal core function to spawn and stream inputs and/or outputs using
   # threads.
   # 
@@ -248,4 +248,4 @@ class Cmds
 
     return status
   end # .spawn
-end
+end # Cmds

@@ -1,10 +1,11 @@
 # util functions
 
+# stdlib
 require 'shellwords'
 
 require_relative 'util/tokenize_options'
 
-class Cmds
+module Cmds
   # class methods
   # =============
 
@@ -87,44 +88,5 @@ class Cmds
         '\1<\2>s'
       )
   end # ::replace_shortcuts
-
-  # instance methods
-  # ================
-
-  # returns a new `Cmds` with the subs and input block merged in
-  def curry *args, **kwds, &input_block
-    self.class.new @template, {
-      args: (@args + args),
-      kwds: (@kwds.merge kwds),
-      input: (input || @input),
-    }
-  end
   
-  # substitute parameters into `@template`.
-  # 
-  # @param *args (see #capture)
-  # @param **kwds (see #capture)
-  # 
-  # @return [String]
-  #   the prepared command string.
-  # 
-  def sub *args, **kwds
-    context = ERBContext.new((@args + args), @kwds.merge(kwds))
-    erb = ShellEruby.new self.class.replace_shortcuts(@template)
-
-    erb.result(context.get_binding)
-  end
-  
-  # prepare a shell-safe command string for execution.
-  # 
-  # @param *args (see #capture)
-  # @param **kwds (see #capture)
-  # 
-  # @return [String]
-  #   the prepared command string.
-  # 
-  def prepare *args, **kwds
-    self.class.format sub(*args, **kwds), @format
-  end
-  
-end # class Cmds
+end # module Cmds

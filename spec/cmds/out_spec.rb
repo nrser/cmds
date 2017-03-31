@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe "Cmds.out" do
   it "gets echo output" do
-    expect( Cmds.out "echo %s", ["hey there!"] ).to eq "hey there!\n"
+    expect( Cmds.out "echo %s", "hey there!" ).to eq "hey there!\n"
   end
 
   it "reads input" do
@@ -16,7 +16,7 @@ end # Cmds.out
 
 describe "Cmds.out!" do
   it "gets echo output" do
-    expect( Cmds.out! "echo %s", ["hey there!"] ).to eq "hey there!\n"
+    expect( Cmds.out! "echo %s", "hey there!" ).to eq "hey there!\n"
   end
 
   it "reads input" do
@@ -34,12 +34,12 @@ end # Cmds.out!
 
 describe "Cmds#out" do
   it "gets echo output" do
-    expect( Cmds.new("echo %s").out ["hey there!"] ).to eq "hey there!\n"
+    expect( Cmds::Cmd.new("echo %s").out "hey there!" ).to eq "hey there!\n"
   end
 
   it "reads input" do
     expect(
-      Cmds.new("ruby -e %{script}").out(script: "puts STDIN.read") {
+      Cmds::Cmd.new("ruby -e %{script}").out(script: "puts STDIN.read") {
         "hey there!"
       }
     ).to eq "hey there!\n"
@@ -48,18 +48,18 @@ end # Cmds#out
 
 describe "Cmds#out!" do
   it "gets echo output" do
-    expect( Cmds.new("echo %s").out! ["hey there!"] ).to eq "hey there!\n"
+    expect( Cmds::Cmd.new("echo %s").out! "hey there!" ).to eq "hey there!\n"
   end
 
   it "reads input" do
     expect(
-      Cmds.new("ruby -e %{script}").out!(script: "puts STDIN.read") {
+      Cmds::Cmd.new("ruby -e %{script}").out!(script: "puts STDIN.read") {
         "hey there!"
       }
     ).to eq "hey there!\n"
   end
 
   it "errors when the command fails" do
-    expect { Cmds.new("false").out! }.to raise_error SystemCallError
+    expect { Cmds::Cmd.new("false").out! }.to raise_error SystemCallError
   end
 end # Cmds#out!
