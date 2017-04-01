@@ -165,7 +165,7 @@ module Cmds
         kwds: kwds,
         io_block: io_block
       
-      Cmds.spawn prepare(*args, **kwds), @input, &io_block
+      Cmds.spawn prepare(*args, **kwds), @input, @env, &io_block
     end # #stream
     
     
@@ -210,7 +210,7 @@ module Cmds
 
       Cmds.debug "calling Cmds.spawn..."
       
-      status = Cmds.spawn cmd do |io|
+      status = Cmds.spawn cmd, nil, @env do |io|
         # send the input to stream, which sends it to spawn
         io.in = input
 

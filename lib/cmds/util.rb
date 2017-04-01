@@ -3,7 +3,7 @@
 # stdlib
 require 'shellwords'
 
-require_relative 'util/tokenize_options'
+require 'cmds/util/tokenize_options'
 
 module Cmds
   # class methods

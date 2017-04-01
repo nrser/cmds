@@ -29,6 +29,9 @@ module Cmds
   #   string or readable input. here so that Cmds instances can pass their
   #   `@input` instance variable -- `&io_block` overrides it.
   # 
+  # @param [Hash{Symbol | String => Object}] env
+  #   blah
+  # 
   # @param [#call & (#arity ∈ {0, 1})] &io_block
   #   optional block to handle io. behavior depends on arity:
   #   
@@ -42,7 +45,7 @@ module Cmds
   # @raise [ArgumentError]
   #   if `&io_block` has arity greater than 1.
   # 
-  def self.spawn cmd, input = nil, &io_block
+  def self.spawn cmd, input = nil, env = {}, &io_block
     Cmds.debug "entering Cmds#really_stream",
       cmd: cmd,
       input: input,
@@ -145,10 +148,13 @@ module Cmds
     end # map outputs
 
     Cmds.debug "spawning...",
+      env: env,
       cmd: cmd,
       opts: spawn_opts
 
-    pid = Process.spawn cmd, spawn_opts
+    pid = Process.spawn env.map {|k, v| [k.to_s, Cmds.esc(v)]}.to_h,
+                        cmd,
+                        spawn_opts
 
     Cmds.debug "spawned.",
       pid: pid
