@@ -152,7 +152,7 @@ module Cmds
       cmd: cmd,
       opts: spawn_opts
 
-    pid = Process.spawn env.map {|k, v| [k.to_s, Cmds.esc(v)]}.to_h,
+    pid = Process.spawn env.map {|k, v| [k.to_s, v]}.to_h,
                         cmd,
                         spawn_opts
 
