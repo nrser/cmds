@@ -59,7 +59,7 @@ module Cmds
     # 
     # defaults to `{}`.
     # 
-    # @return [Hash{Symbol => String}]
+    # @return [Hash{String | Symbol => String}]
     attr_reader :env
     
     # format specifier symbol:

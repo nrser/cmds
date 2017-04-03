@@ -10,4 +10,15 @@ describe "Cmds ENV vars" do
     cmd = Cmds::Cmd.new 'echo "${BLAH}"', env: {BLAH: "hey there"}
     expect(cmd.chomp!).to eq "hey there"
   end
+  
+  it "accepts string keys" do
+    cmd = Cmds::Cmd.new 'echo "${BLAH}"', env: {
+      'BLAH' => [
+        "/usr/local/bin",
+        "/usr/bin",
+        "/bin"
+      ].join(':')
+    }
+    expect(cmd.chomp!).to eq "/usr/local/bin:/usr/bin:/bin"
+  end
 end
