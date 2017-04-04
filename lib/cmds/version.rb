@@ -1,3 +1,3 @@
 module Cmds
-  VERSION = "0.1.3.dev"
+  VERSION = "0.1.3"
 end
