@@ -4,7 +4,6 @@ describe "Cmds.prepare" do
   it "should work with a keyword substitutions" do
     expect(
       Cmds.prepare "psql <%= opts %> <%= database %> < <%= filepath %>",
-        [],
         database: "blah",
         filepath: "/where ever/it/is.psql",
         opts: {
@@ -12,6 +11,26 @@ describe "Cmds.prepare" do
           host: "localhost",
           port: 12345,
         }
+    ).to eq 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
+  end
+  
+  it "should work with a keyword substitutions with String keys" do
+    expect(
+      # NOTE  since we use **kwds in #prepare which only accepts symbol keys,
+      #       have to load kwds with string keys in through Cmd.new
+      Cmds::Cmd.new(
+        "psql <%= opts %> <%= database %> < <%= filepath %>", {
+          kwds: {
+            'database' => "blah",
+            'filepath' => "/where ever/it/is.psql",
+            'opts' => {
+              username: "bingo bob",
+              host: "localhost",
+              port: 12345,
+            }
+          }
+        }
+      ).prepare
     ).to eq 'psql --host=localhost --port=12345 --username=bingo\ bob blah < /where\ ever/it/is.psql'
   end
 

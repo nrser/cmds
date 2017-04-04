@@ -14,10 +14,19 @@ module Cmds
           # by returning `nil` if the value is "false-y"
           @kwds[key] if @kwds[key]
         else
-          @kwds.fetch sym
+          if @kwds.key? sym
+            @kwds[sym]
+          elsif @kwds.key? sym.to_s
+            @kwds[sym.to_s]
+          else
+            ::Kernel.raise ::KeyError.new ::NRSER.squish <<-END
+              couldn't find keys #{ sym.inspect } or #{ sym.to_s.inspect }
+              in keywords #{ @kwds.inspect }
+            END
+          end
         end
       else
-        super
+        super sym, *args, &block
       end
     end
 
