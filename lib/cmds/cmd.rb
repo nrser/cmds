@@ -1,3 +1,7 @@
+# deps
+require 'nrser'
+
+# project
 require 'cmds/debug'
 require 'cmds/util'
 require 'cmds/spawn'
@@ -109,6 +113,7 @@ module Cmds
       @assert = opts[:assert] || false
       @env = opts[:env] || {}
       @format = opts[:format] || :squish
+      @env_mode = opts[:env_mode] || :inline
     end # #initialize
     
     
@@ -141,8 +146,17 @@ module Cmds
     def render *args, **kwds
       context = Cmds::ERBContext.new((@args + args), @kwds.merge(kwds))
       erb = Cmds::ShellEruby.new Cmds.replace_shortcuts(@template)
-
-      erb.result(context.get_binding)
+      rendered = NRSER.dedent erb.result(context.get_binding)
+      
+      if @env_mode == :inline && !@env.empty?
+        rendered = @env.sort_by {|name, value|
+          name
+        }.map {|name, value|
+          "#{ name }=#{ Cmds.esc value }"
+        }.join("\n\n") + "\n\n" + rendered
+      end
+      
+      rendered
     end
     
     
@@ -165,7 +179,11 @@ module Cmds
         kwds: kwds,
         io_block: io_block
       
-      Cmds.spawn prepare(*args, **kwds), @input, @env, &io_block
+      Cmds.spawn  prepare(*args, **kwds),
+                  @input,
+                  # include env if mode is spawn argument
+                  (@env_mode == :spawn_arg ? @env : {}),
+                  &io_block
     end # #stream
     
     
@@ -210,7 +228,13 @@ module Cmds
 
       Cmds.debug "calling Cmds.spawn..."
       
-      status = Cmds.spawn cmd, nil, @env do |io|
+      status = Cmds.spawn(
+        cmd,
+        # we deal with input in the block
+        nil,
+        # include env if mode is spawn argument
+        (@env_mode == :spawn_arg ? @env : {}),
+      ) do |io|
         # send the input to stream, which sends it to spawn
         io.in = input
 

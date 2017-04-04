@@ -44,11 +44,17 @@ module Cmds
   end
   
   def self.pretty_format string
+    string = string.gsub(/\n(\s*\n)+\n/, "\n\n")
+    
     string.lines.map {|line|
       line = line.rstrip
       
       if line.end_with? '\\'
         line
+      elsif line == ''
+        '\\'
+      elsif line =~ /\s$/
+        line + '\\'
       else
         line + ' \\'
       end
