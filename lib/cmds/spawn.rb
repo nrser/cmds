@@ -45,11 +45,15 @@ module Cmds
   # @raise [ArgumentError]
   #   if `&io_block` has arity greater than 1.
   # 
-  def self.spawn cmd, input = nil, env = {}, &io_block
-    Cmds.debug "entering Cmds#really_stream",
+  def self.spawn cmd, **opts, &io_block
+    Cmds.debug "entering Cmds#spawn",
       cmd: cmd,
-      input: input,
+      opts: opts,
       io_block: io_block
+    
+    env = opts[:env] || {}
+    input = opts[:input]
+    chdir = opts[:chdir]
 
     # create the handler that will be yielded to the input block
     handler = Cmds::IOHandler.new
@@ -80,6 +84,9 @@ module Cmds
 
     # hash of options that will be passed to `spawn`
     spawn_opts = {}
+    
+    # add chdir if provided
+    spawn_opts[:chdir] = chdir if chdir
 
     Cmds.debug "looking at input...",
       input: input

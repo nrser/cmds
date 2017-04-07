@@ -79,6 +79,12 @@ module Cmds
     attr_reader :format
     
     
+    # directory to run the command in.
+    # 
+    # @return [nil | String]
+    attr_reader :chdir
+    
+    
     # construct a Cmd.
     # 
     # @param [String] template
@@ -101,6 +107,9 @@ module Cmds
     # @option opts [:squish, :pretty] :format
     #   sets the {#format} attribute.
     # 
+    # @option opts [nil | String] :chdir
+    #   sets the {#chdir} attribute.
+    # 
     def initialize template, **opts
       Cmds.debug "Cmd constructing...",
         template: template,
@@ -114,6 +123,7 @@ module Cmds
       @env = opts[:env] || {}
       @format = opts[:format] || :squish
       @env_mode = opts[:env_mode] || :inline
+      @chdir = opts[:chdir] || nil
     end # #initialize
     
     
@@ -126,6 +136,7 @@ module Cmds
         assert: @assert,
         env: @env,
         format: @format,
+        chdir: @chdir,
       }
     end
     
@@ -180,9 +191,10 @@ module Cmds
         io_block: io_block
       
       Cmds.spawn  prepare(*args, **kwds),
-                  @input,
+                  input: @input,
                   # include env if mode is spawn argument
-                  (@env_mode == :spawn_arg ? @env : {}),
+                  env: (@env_mode == :spawn_arg ? @env : {}),
+                  chdir: @chdir,
                   &io_block
     end # #stream
     
@@ -230,10 +242,9 @@ module Cmds
       
       status = Cmds.spawn(
         cmd,
-        # we deal with input in the block
-        nil,
         # include env if mode is spawn argument
-        (@env_mode == :spawn_arg ? @env : {}),
+        env: (@env_mode == :spawn_arg ? @env : {}),
+        chdir: @chdir
       ) do |io|
         # send the input to stream, which sends it to spawn
         io.in = input
