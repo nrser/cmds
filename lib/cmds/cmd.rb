@@ -116,11 +116,11 @@ module Cmds
         opts: opts
 
       @template = template
-      @args = opts[:args] || []
-      @kwds = opts[:kwds] || {}
+      @args = (opts[:args] || []).freeze
+      @kwds = (opts[:kwds] || {}).freeze
       @input = opts[:input] || nil
       @assert = opts[:assert] || false
-      @env = opts[:env] || {}
+      @env = (opts[:env] || {}).freeze
       @format = opts[:format] || :squish
       @env_mode = opts[:env_mode] || :inline
       @chdir = opts[:chdir] || nil
