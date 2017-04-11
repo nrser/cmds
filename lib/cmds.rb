@@ -10,6 +10,7 @@ require 'cmds/erb_context'
 require 'cmds/shell_eruby'
 require 'cmds/result'
 require 'cmds/sugar'
+require 'cmds/stream'
 
 class Cmds
   # ERB stirng template (with Cmds-specific extensions) for the command.
@@ -180,35 +181,20 @@ class Cmds
   def prepare *args, **kwds
     Cmds.format render(*args, **kwds), @format
   end # #prepare
-
-
-  def stream *args, **kwds, &io_block
-    Cmds.debug "entering Cmd#stream",
-      args: args,
-      kwds: kwds,
-      io_block: io_block
-    
-    Cmds.spawn  prepare(*args, **kwds),
-                input: @input,
-                # include env if mode is spawn argument
-                env: (@env_mode == :spawn_arg ? @env : {}),
-                chdir: @chdir,
-                &io_block
-  end # #stream
-
+  
 
   # executes the command and returns a {Cmds::Result} with the captured
   # outputs.
   # 
-  # @param [Array<Object>] args
+  # @param [Array<Object>] *args
   #   positional parameters to append to those in `@args` for rendering 
   #   into the command string.
   # 
-  # @param [Hash{Symbol => Object}] kwds
+  # @param [Hash{Symbol => Object}] **kwds
   #   keyword parameters that override those in `@kwds` for rendering
   #   into the command string.
   # 
-  # @param [#call] input_block
+  # @param [#call] &input_block
   #   optional block that returns a string or readable object to override
   #   `@input`.
   # 
@@ -301,11 +287,6 @@ class Cmds
   def error? *args, **kwds, &io_block
     stream(*args, **kwds, &io_block) != 0
   end
-
-
-  # def assert
-  #   capture.raise_error
-  # end
 
 
   def proxy

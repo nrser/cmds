@@ -3,7 +3,13 @@
 # stdlib
 require 'shellwords'
 
+# deps
+require 'nrser'
+
+# package
 require 'cmds/util/tokenize_options'
+
+using NRSER
 
 class Cmds
   # class methods
@@ -105,4 +111,26 @@ class Cmds
       )
   end # ::replace_shortcuts
   
+  # raise an error unless the exit status is 0.
+  # 
+  # @param [String] cmd
+  #   the command sting that was executed.
+  # 
+  # @param [Fixnum] status
+  #   the command's exit status.
+  # 
+  # @return [nil]
+  # 
+  # @raise [SystemCallError]
+  #   if exit status is not 0.
+  # 
+  def self.check_status cmd, status
+    unless status.equal? 0
+      msg = NRSER.squish <<-END
+        command `#{ cmd }` exited with status #{ status }
+      END
+      
+      raise SystemCallError.new msg, status
+    end
+  end # .assert
 end # class Cmds

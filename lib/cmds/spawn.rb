@@ -42,6 +42,9 @@ class Cmds
   #       -   block is called with the {Cmds::IOHandler} instance for the
   #           execution, which it can use to handle input and outputs.
   # 
+  # @return [Fixnum]
+  #   command exit status.
+  # 
   # @raise [ArgumentError]
   #   if `&io_block` has arity greater than 1.
   # 

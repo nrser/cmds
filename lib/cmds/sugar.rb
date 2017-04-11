@@ -93,8 +93,8 @@ class Cmds
   end
   
   
-  def self.stream! template, *subs, &input_block
-    Cmds.new(template, assert: true).stream *subs, &input_block
+  def self.stream! template, *args, **kwds, &io_block
+    Cmds.new(template).stream! *args, **kwds, &io_block
   end # ::stream!
 
   

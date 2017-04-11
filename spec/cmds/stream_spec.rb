@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe "Cmds::stream" do
+describe 'Cmds#stream' do
   let(:times) { 5 }
 
   it "writes to $stdout and $stderr by default" do
@@ -54,5 +54,16 @@ describe "Cmds::stream" do
 
       expect(out).to match /^\s+3\n$/
     end
+  end # input
+  
+  it "returns the exit status" do
+    expect(Cmds.new('true').stream).to be 0
+    expect(Cmds.new('false').stream).to be 1
   end
-end # Cmds::stream
+end # Cmds#stream
+
+describe 'Cmds#stream!' do
+  it "raises when exit code is not 0" do
+    expect { Cmds.new('false').stream! }.to raise_error SystemCallError
+  end
+end
