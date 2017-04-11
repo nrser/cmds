@@ -55,14 +55,7 @@ class Cmds
     # @raise [SystemCallError] if the command failed.
     #
     def assert
-      if error?
-        msg = <<-BLOCK.squish
-          command `#{ @cmd }` exited with status #{ @status }
-          and stderr #{ err.inspect }
-        BLOCK
-
-        raise SystemCallError.new msg, @status
-      end
+      Cmds.check_status @cmd, @status, @err
       self
     end # raise_error
   end # Result

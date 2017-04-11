@@ -124,11 +124,15 @@ class Cmds
   # @raise [SystemCallError]
   #   if exit status is not 0.
   # 
-  def self.check_status cmd, status
+  def self.check_status cmd, status, err = nil
     unless status.equal? 0
       msg = NRSER.squish <<-END
         command `#{ cmd }` exited with status #{ status }
       END
+      
+      if err
+        msg += " and stderr:\n\n" + err
+      end
       
       raise SystemCallError.new msg, status
     end
