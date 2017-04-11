@@ -65,7 +65,7 @@ module Cmds
     template
       .gsub(
         # %s => <%= arg %>
-        /(?<=\A|[[:space:]])\%s(?=\Z|[[:space:]])/,
+        /(?<=\A|\=|[[:space:]])\%s(?=\Z|[[:space:]])/,
         '<%= arg %>'
       )
       .gsub(
@@ -75,7 +75,7 @@ module Cmds
       )
       .gsub(
         # %{key} => <%= key %>, %{key?} => <%= key? %>
-        /(?<=\A|[[:space:]])\%\{([a-zA-Z_]+\??)\}(?=\Z|[[:space:]])/,
+        /(?<=\A|\=|[[:space:]])\%\{([a-zA-Z_]+\??)\}(?=\Z|[[:space:]])/,
         '<%= \1 %>'
       )
       .gsub(
@@ -85,7 +85,7 @@ module Cmds
       )
       .gsub(
         # %<key>s => <%= key %>, %<key?>s => <%= key? %>
-        /(?<=\A|[[:space:]])\%\<([a-zA-Z_]+\??)\>s(?=\Z|[[:space:]])/,
+        /(?<=\A|\=|[[:space:]])\%\<([a-zA-Z_]+\??)\>s(?=\Z|[[:space:]])/,
         '<%= \1 %>'
       )
       .gsub(

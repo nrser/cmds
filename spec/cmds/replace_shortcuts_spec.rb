@@ -115,4 +115,29 @@ describe 'Cmds::replace_shortcuts' do
       ["50%savings!"]             => "50%savings!",
     }
   end
+  
+  context "% proceeded by =" do
+    it "should do %s substitution when proceeded by an =" do
+      expect_map meth, {
+        ["X=%s"]          => "X=<%= arg %>",
+        ["hey there=%s"]  => "hey there=<%= arg %>",
+      }
+    end
+    
+    
+    it "should do %{key} substitution when proceeded by an =" do
+      expect_map meth, {
+        ["X=%{key}"]      => "X=<%= key %>",
+        ["hey there=%{key}"]  => "hey there=<%= key %>",
+      }
+    end
+    
+    
+    it "should do %<key>s substitution when proceeded by an =" do
+      expect_map meth, {
+        ["X=%<key>s"]          => "X=<%= key %>",
+        ["hey there=%<key>s"]  => "hey there=<%= key %>",
+      }
+    end
+  end # % proceeded by =
 end

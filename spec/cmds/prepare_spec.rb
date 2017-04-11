@@ -166,5 +166,37 @@ describe "Cmds.prepare" do
         Cmds.prepare "./test/echo_cmd.rb %<key>s", key: "hello world!"
       ).to eq './test/echo_cmd.rb hello\ world\!'
     end
+    
+    context "% proceeded by =" do
+      it "handles %s" do
+        expect(
+          Cmds.prepare "X=%s ./test/echo_cmd.rb", "hello world!"
+        ).to eq 'X=hello\ world\! ./test/echo_cmd.rb'
+        
+        expect(
+          Cmds.prepare "./test/echo_cmd.rb --x=%s", "hello world!"
+        ).to eq './test/echo_cmd.rb --x=hello\ world\!'
+      end
+      
+      it "handles %{key}" do
+        expect(
+          Cmds.prepare "X=%{key} ./test/echo_cmd.rb", key: "hello world!"
+        ).to eq 'X=hello\ world\! ./test/echo_cmd.rb'
+        
+        expect(
+          Cmds.prepare "./test/echo_cmd.rb --x=%<key>s", key: "hello world!"
+        ).to eq './test/echo_cmd.rb --x=hello\ world\!'
+      end
+      
+      it "handles %<key>s" do
+        expect(
+          Cmds.prepare "X=%<key>s ./test/echo_cmd.rb", key: "hello world!"
+        ).to eq 'X=hello\ world\! ./test/echo_cmd.rb'
+        
+        expect(
+          Cmds.prepare "./test/echo_cmd.rb --x=%<key>s", key: "hello world!"
+        ).to eq './test/echo_cmd.rb --x=hello\ world\!'
+      end
+    end # % proceeded by =
   end # shortcuts
 end # ::sub
