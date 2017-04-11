@@ -10,8 +10,6 @@ require 'nrser/refinements'
 require 'cmds/pipe'
 require 'cmds/io_handler'
 
-using NRSER
-
 class Cmds
   # internal core function to spawn and stream inputs and/or outputs using
   # threads.
@@ -79,7 +77,7 @@ class Cmds
         input = handler.in unless handler.in.nil?
       else
         # bad block provided
-        raise ArgumentError.new <<-BLOCK.squish
+        raise ArgumentError.new NRSER.squish <<-BLOCK
           provided input block must have arity 0 or 1
         BLOCK
       end # case io_block.arity
@@ -210,7 +208,7 @@ class Cmds
             if line.nil?
               Cmds.debug "received nil, output done."
             else
-              Cmds.debug <<-BLOCK.squish
+              Cmds.debug NRSER.squish <<-BLOCK
                 received #{ line.bytesize } bytes, passing to handler.
               BLOCK
             end
@@ -253,7 +251,7 @@ class Cmds
     if @assert && status != 0
       # we don't necessarily have the err output, so we can't include it
       # in the error message
-      msg = <<-BLOCK.squish
+      msg = NRSER.squish <<-BLOCK
         streamed command `#{ cmd }` exited with status #{ status }
       BLOCK
 

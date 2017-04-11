@@ -1,7 +1,5 @@
 require 'nrser/refinements'
 
-using NRSER
-
 class Cmds
   # a simple data structure returned from calling {Cmds#capture} 
   # on a {Cmd} instance.

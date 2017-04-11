@@ -1,8 +1,6 @@
 require 'json'
 require 'nrser/refinements'
 
-using NRSER
-
 require_relative "defaults"
 
 class Cmds
@@ -39,7 +37,7 @@ class Cmds
     opts = defaults opts, [:array_mode, :array_join_string, :false_mode]
     
     unless name.is_a?(String) && name.length > 0
-      raise ArgumentError.new <<-END.squish
+      raise ArgumentError.new NRSER.squish <<-END
         `name` must be a String of length greater than zero,
         found #{ name.inspect }
       END
@@ -78,7 +76,7 @@ class Cmds
         
       else
         # SOL
-        raise ArgumentError.new <<-END.squish
+        raise ArgumentError.new NRSER.squish <<-END
           bad array_mode option: #{ opts[:array_mode] }, 
           should be :repeat, :join or :json
         END
@@ -103,7 +101,7 @@ class Cmds
         ["--no-#{ esc(name) }"]
         
       else
-        raise ArgumentError.new <<-END.squish
+        raise ArgumentError.new NRSER.squish <<-END
           bad :false_mode option: #{ opts[:false_mode] }, 
           should be :omit or :no
         END

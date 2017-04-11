@@ -9,8 +9,6 @@ require 'nrser'
 # package
 require 'cmds/util/tokenize_options'
 
-using NRSER
-
 class Cmds
   # class methods
   # =============
