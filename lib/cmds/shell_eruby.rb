@@ -5,7 +5,7 @@ module Cmds
   # leaves `<%== %>` raw) that calls `Cmds.expand_sub` on the value
   class ShellEruby < Erubis::EscapedEruby
     def escaped_expr code
-      "::Cmds.expand_sub(#{code.strip})"
+      "::Cmds.tokenize(#{code.strip})"
     end
   end
 end # module Cmds

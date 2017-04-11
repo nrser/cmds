@@ -199,4 +199,12 @@ describe "Cmds.prepare" do
       end
     end # % proceeded by =
   end # shortcuts
+  
+  context "tokenize multiple args as shell list" do
+    it "should expand args as space-separated list" do
+      expect(
+        Cmds.prepare "git add <%= *args %>", "x", "y", "z"
+      ).to eq "git add x y z"
+    end
+  end
 end # ::sub

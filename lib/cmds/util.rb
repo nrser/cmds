@@ -16,18 +16,28 @@ module Cmds
     Shellwords.escape str
   end  
 
-  # expand one of the substitutions
-  def self.expand_sub sub
-    case sub
-    when nil
-      # nil is just an empty string, NOT an empty string bash token
-      ''
-    when Hash
-      tokenize_options sub
-    else
-      esc sub.to_s
-    end
-  end # ::expand_sub
+  # tokenize values for the shell. each values is tokenized individually
+  # and the results are joined with a space.
+  # 
+  # @param [Array<Object>] *values
+  #   values to tokenize.
+  # 
+  # @return [String]
+  #   tokenized string ready for the shell.
+  # 
+  def self.tokenize *values
+    values.map {|value|
+      case value
+      when nil
+        # nil is just an empty string, NOT an empty string bash token
+        ''
+      when Hash
+        tokenize_options value
+      else
+        esc value.to_s
+      end
+    }.join ' '
+  end # ::tokenize
   
   # formats a command string 
   def self.format string, with = :squish

@@ -1,5 +1,7 @@
 module Cmds
   class ERBContext < BasicObject
+    attr_reader :args
+    
     def initialize args, kwds
       @args = args
       @kwds = kwds
