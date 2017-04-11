@@ -12,7 +12,7 @@ require 'cmds/io_handler'
 
 using NRSER
 
-module Cmds
+class Cmds
   # internal core function to spawn and stream inputs and/or outputs using
   # threads.
   # 

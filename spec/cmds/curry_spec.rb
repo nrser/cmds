@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe "Cmds::curry" do
   it "currys" do
-    base = Cmds::Cmd.new "#{ ECHO_CMD } <%= x %> <%= y %>"
+    base = Cmds.new "#{ ECHO_CMD } <%= x %> <%= y %>"
 
     x1 = base.curry x: 1
     x2 = base.curry x: 2

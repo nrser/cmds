@@ -1,4 +1,4 @@
-module Cmds
+class Cmds
   class ERBContext < BasicObject
     attr_reader :args
     
@@ -40,4 +40,4 @@ module Cmds
       @args.fetch(@arg_index).tap {@arg_index += 1}
     end
   end # end ERBContext
-end # module Cmds
+end # class Cmds

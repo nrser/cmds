@@ -1,4 +1,4 @@
-module Cmds
+class Cmds
   # hash of common default values used in method options.
   # 
   # don't use them directly -- use {Cmds.defaults}.

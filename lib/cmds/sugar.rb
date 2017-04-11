@@ -21,7 +21,7 @@ def Cmds! template, *args, **kwds, &io_block
 end
 
 
-module Cmds
+class Cmds
   # create a new {Cmd} instance with the template and parameters and
   # calls {Cmd#prepare}.
   # 
@@ -38,7 +38,7 @@ module Cmds
   #   rendered and formatted command string ready to be executed.
   # 
   def self.prepare template, *args, **kwds
-    Cmd.new(template).prepare *args, **kwds
+    Cmds.new(template).prepare *args, **kwds
   end
   
   
@@ -57,7 +57,7 @@ module Cmds
   #   result with command string, exist status, stdout and stderr.
   # 
   def self.capture template, *args, **kwds, &input_block
-    Cmd.new(template).capture *args, **kwds, &input_block
+    Cmds.new(template).capture *args, **kwds, &input_block
   end
   
   
@@ -73,28 +73,28 @@ module Cmds
   #   result with command string, exist status, stdout and stderr.
   # 
   def self.ok? template, *args, **kwds, &io_block
-    Cmd.new(template).ok? *args, **kwds, &io_block
+    Cmds.new(template).ok? *args, **kwds, &io_block
   end
   
   
   def self.error? template, *args, **kwds, &io_block
-    Cmd.new(template).error? *args, **kwds, &io_block
+    Cmds.new(template).error? *args, **kwds, &io_block
   end
   
   
   # create a new {Cmd} and 
   def self.assert template, *args, **kwds, &io_block
-    Cmd.new(template).capture(*args, **kwds, &io_block).assert
+    Cmds.new(template).capture(*args, **kwds, &io_block).assert
   end
   
   
   def self.stream template, *subs, &input_block
-    Cmds::Cmd.new(template).stream *subs, &input_block
+    Cmds.new(template).stream *subs, &input_block
   end
   
   
   def self.stream! template, *subs, &input_block
-    Cmds::Cmd.new(template, assert: true).stream *subs, &input_block
+    Cmds.new(template, assert: true).stream *subs, &input_block
   end # ::stream!
 
   
@@ -112,7 +112,7 @@ module Cmds
   #   the command's stdout.
   #
   def self.out template, *args, **kwds, &input_block
-    Cmd.new(template).out *args, **kwds, &input_block
+    Cmds.new(template).out *args, **kwds, &input_block
   end
   
   
@@ -133,7 +133,7 @@ module Cmds
   #   if the command fails (non-zero exit status).
   #
   def self.out! template, *args, **kwds, &input_block
-    Cmd.new(template).out! *args, **kwds, &input_block
+    Cmds.new(template).out! *args, **kwds, &input_block
   end
   
   

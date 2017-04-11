@@ -1,6 +1,6 @@
 require 'erubis'
 
-module Cmds
+class Cmds
   # extension of Erubis' EscapedEruby (which auto-escapes `<%= %>` and
   # leaves `<%== %>` raw) that calls `Cmds.expand_sub` on the value
   class ShellEruby < Erubis::EscapedEruby
@@ -8,4 +8,4 @@ module Cmds
       "::Cmds.tokenize(#{code.strip})"
     end
   end
-end # module Cmds
+end # class Cmds

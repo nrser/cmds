@@ -1,5 +1,5 @@
 require 'cmds'
 
 Cmds.enable_debug do
-  Cmds::Cmd.new("./test/questions.rb").proxy
+  Cmds.new("./test/questions.rb").proxy
 end

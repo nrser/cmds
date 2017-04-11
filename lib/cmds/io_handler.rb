@@ -1,4 +1,4 @@
-module Cmds
+class Cmds
   class IOHandler
     attr_accessor :in, :out, :err
 
@@ -73,4 +73,4 @@ module Cmds
 
     # end private
   end # end IOHandler
-end # module Cmds
+end # class Cmds

@@ -1,6 +1,6 @@
 require_relative 'tokenize_option'
 
-module Cmds
+class Cmds
   # escape option hash.
   #
   # this is only useful for the two common option styles: 

@@ -34,12 +34,12 @@ end # Cmds.chomp!
 
 describe "Cmds#chomp" do
   it "gets echo output" do
-    expect( Cmds::Cmd.new("echo %s").chomp "hey there!" ).to eq "hey there!"
+    expect( Cmds.new("echo %s").chomp "hey there!" ).to eq "hey there!"
   end
 
   it "reads input" do
     expect(
-      Cmds::Cmd.new("ruby -e %{script}").chomp(script: "puts STDIN.read") {
+      Cmds.new("ruby -e %{script}").chomp(script: "puts STDIN.read") {
         "hey there!"
       }
     ).to eq "hey there!"
@@ -48,18 +48,18 @@ end # Cmds#chomp
 
 describe "Cmds#chomp!" do
   it "gets echo output" do
-    expect( Cmds::Cmd.new("echo %s").chomp! "hey there!" ).to eq "hey there!"
+    expect( Cmds.new("echo %s").chomp! "hey there!" ).to eq "hey there!"
   end
 
   it "reads input" do
     expect(
-      Cmds::Cmd.new("ruby -e %{script}").chomp!(script: "puts STDIN.read") {
+      Cmds.new("ruby -e %{script}").chomp!(script: "puts STDIN.read") {
         "hey there!"
       }
     ).to eq "hey there!"
   end
 
   it "errors when the command fails" do
-    expect { Cmds::Cmd.new("false").chomp! }.to raise_error SystemCallError
+    expect { Cmds.new("false").chomp! }.to raise_error SystemCallError
   end
 end # Cmds#chomp!

@@ -2,7 +2,7 @@ require 'nrser/refinements'
 
 using NRSER
 
-module Cmds
+class Cmds
   # a simple data structure returned from calling {Cmds#capture} 
   # on a {Cmd} instance.
   # 

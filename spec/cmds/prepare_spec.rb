@@ -17,8 +17,8 @@ describe "Cmds.prepare" do
   it "should work with a keyword substitutions with String keys" do
     expect(
       # NOTE  since we use **kwds in #prepare which only accepts symbol keys,
-      #       have to load kwds with string keys in through Cmd.new
-      Cmds::Cmd.new(
+      #       have to load kwds with string keys in through Cmds.new
+      Cmds.new(
         "psql <%= opts %> <%= database %> < <%= filepath %>", {
           kwds: {
             'database' => "blah",

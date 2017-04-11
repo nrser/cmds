@@ -2,8 +2,8 @@ require 'spec_helper'
 
 describe "Cmds::ok?" do
   it "works through instance method" do
-    expect( Cmds::Cmd.new("true").ok? ).to be true
-    expect( Cmds::Cmd.new("false").ok? ).to be false
+    expect( Cmds.new("true").ok? ).to be true
+    expect( Cmds.new("false").ok? ).to be false
   end
 
   it "works through class method" do

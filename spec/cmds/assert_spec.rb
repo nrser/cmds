@@ -11,6 +11,6 @@ describe "Cmds::assert" do
 
   it "should be chainable when the command is ok" do
     expect( Cmds!("echo hey").out ).to eq "hey\n"
-    expect( Cmds::Cmd.new("echo hey").capture.assert.out ).to eq "hey\n"
+    expect( Cmds.new("echo hey").capture.assert.out ).to eq "hey\n"
   end
 end # Cmds::run

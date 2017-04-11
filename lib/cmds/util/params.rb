@@ -1,4 +1,4 @@
-module Cmds
+class Cmds
   class Params
     # Cmds instance execution methods take a splat and block 
     def self.normalize *params, &input

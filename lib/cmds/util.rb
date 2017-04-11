@@ -5,7 +5,7 @@ require 'shellwords'
 
 require 'cmds/util/tokenize_options'
 
-module Cmds
+class Cmds
   # class methods
   # =============
 
@@ -105,4 +105,4 @@ module Cmds
       )
   end # ::replace_shortcuts
   
-end # module Cmds
+end # class Cmds

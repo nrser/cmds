@@ -1,4 +1,4 @@
-module Cmds
+class Cmds
   # stupid little wrapper around IO.pipe that can have some extra info
   # attached to it
   class Pipe

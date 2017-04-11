@@ -17,13 +17,13 @@ end # Cmds.err
 describe "Cmds#err" do
   it "gets echo error output" do
     expect( 
-      Cmds::Cmd.new("echo %s 1>&2").err "hey there!"
+      Cmds.new("echo %s 1>&2").err "hey there!"
     ).to eq "hey there!\n"
   end
 
   it "reads input" do
     expect(
-      Cmds::Cmd.new("ruby -e %{script}").
+      Cmds.new("ruby -e %{script}").
         err(script: "$stderr.puts STDIN.read") {
           "hey there!"
         }

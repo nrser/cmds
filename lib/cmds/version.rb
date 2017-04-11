@@ -1,3 +1,3 @@
-module Cmds
-  VERSION = "0.1.6.dev"
+class Cmds
+  VERSION = "0.2.0.dev"
 end

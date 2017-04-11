@@ -244,7 +244,7 @@ though keys with those names may be accessed directly via `@kwds.fetch(key)` and
 to test for a key's presence or optionally include a value, append `?` to the method name:
 
 ```
-c = Cmds::Cmd.new <<-BLOCK
+c = Cmds.new <<-BLOCK
   defaults
   <% if current_host? %>
     -currentHost <%= current_host %>
@@ -350,7 +350,7 @@ Cmds.sub "50%" # => "50%"
 ## reuse commands
 
 ```
-playbook = Cmds::Cmd.new "ansible-playbook -i %{inventory} %{playbook}"
+playbook = Cmds.new "ansible-playbook -i %{inventory} %{playbook}"
 playbook.call inventory: "./hosts", playbook: "blah.yml"
 ```
 
@@ -376,7 +376,7 @@ NEEDS TEST
 can be accomplished with reuse and currying stuff
 
 ```
-playbook = Cmds::Cmd.new "ansible-playbook -i %{inventory} %{playbook}", inventory: "inventory/dev"
+playbook = Cmds.new "ansible-playbook -i %{inventory} %{playbook}", inventory: "inventory/dev"
 
 # run setup.yml on the development hosts
 playbook.call playbook: "setup.yml"
@@ -390,7 +390,7 @@ prod_playbook.call playbook: "setup.yml", inventory: "inventory/prod"
 ## input
 
 ```
-c = Cmds::Cmd.new("wc", input: "blah blah blah).call
+c = Cmds.new("wc", input: "blah blah blah).call
 ```
 
 
