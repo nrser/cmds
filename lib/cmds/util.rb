@@ -69,7 +69,7 @@ module Cmds
         '<%= arg %>'
       )
       .gsub(
-        # %%s => %s (escpaing)
+        # %%s => %s (escaping)
         /(?<=\A|[[:space:]])(\%+)\%s(?=\Z|[[:space:]])/,
         '\1s'
       )
@@ -79,7 +79,7 @@ module Cmds
         '<%= \1 %>'
       )
       .gsub(
-        # %%{key} => %{key}, %%{key?} => %{key?} (escpaing)
+        # %%{key} => %{key}, %%{key?} => %{key?} (escaping)
         /(?<=\A|[[:space:]])(\%+)\%\{([a-zA-Z_]+\??)\}(?=\Z|[[:space:]])/,
         '\1{\2}\3'
       )
