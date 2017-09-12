@@ -248,14 +248,14 @@ class Cmds
 
   # returns a new {Cmds} with the parameters and input merged in
   def curry *args, **kwds, &input_block
-    self.class.new @template, {
-      args: (@args + args),
-      kwds: (@kwds.merge kwds),
-      input: (input ? input.call : @input),
-      assert: @assert,
-      env: @env,
-      format: @format,
-      chdir: @chdir,
+    self.class.new template, {
+      args: (self.args + args),
+      kwds: (self.kwds.merge kwds),
+      input: (input_block ? input_block.call : self.input),
+      assert: self.assert,
+      env: self.env,
+      format: self.format,
+      chdir: self.chdir,
     }
   end
 
@@ -274,12 +274,12 @@ class Cmds
   #   the rendered command string.
   # 
   def render *args, **kwds
-    context = Cmds::ERBContext.new((@args + args), @kwds.merge(kwds))
-    erb = Cmds::ShellEruby.new Cmds.replace_shortcuts(@template)
+    context = Cmds::ERBContext.new((self.args + args), self.kwds.merge(kwds))
+    erb = Cmds::ShellEruby.new Cmds.replace_shortcuts(self.template)
     rendered = NRSER.dedent erb.result(context.get_binding)
     
-    if @env_mode == :inline && !@env.empty?
-      rendered = @env.sort_by {|name, value|
+    if self.env_mode == :inline && !self.env.empty?
+      rendered = self.env.sort_by {|name, value|
         name
       }.map {|name, value|
         "#{ name }=#{ Cmds.esc value }"
@@ -299,7 +299,7 @@ class Cmds
   #   the prepared command string.
   # 
   def prepare *args, **kwds
-    @last_prepared_cmd = Cmds.format render(*args, **kwds), @format
+    @last_prepared_cmd = Cmds.format render(*args, **kwds), self.format
   end # #prepare
 
 
