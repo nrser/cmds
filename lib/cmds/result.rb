@@ -2,7 +2,7 @@ require 'nrser/refinements'
 
 class Cmds
   # a simple data structure returned from calling {Cmds#capture} 
-  # on a {Cmd} instance.
+  # on a {Cmds} instance.
   # 
   # it contains the exit status code, standard output and standard error,
   # as well as the actual string command issued (after all substitutions).

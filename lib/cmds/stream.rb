@@ -11,17 +11,12 @@ class Cmds
   #   command exit status.
   # 
   def stream *args, **kwds, &io_block
-    Cmds.debug "entering Cmd#stream",
+    Cmds.debug "entering Cmds#stream",
       args: args,
       kwds: kwds,
       io_block: io_block
     
-    Cmds.spawn  prepare(*args, **kwds),
-                input: @input,
-                # include env if mode is spawn argument
-                env: (@env_mode == :spawn_arg ? @env : {}),
-                chdir: @chdir,
-                &io_block
+    spawn *args, **kwds, &io_block
   end # #stream
 
   # stream and raise an error if exit code is not 0.
@@ -35,16 +30,9 @@ class Cmds
   #   if exit status is not 0.
   # 
   def stream! *args, **kwds, &io_block
-    cmd = prepare(*args, **kwds)
+    status = stream *args, **kwds, &io_block
     
-    status = Cmds.spawn cmd,
-                        input: @input,
-                        # include env if mode is spawn argument
-                        env: (@env_mode == :spawn_arg ? @env : {}),
-                        chdir: @chdir,
-                        &io_block
-    
-    Cmds.check_status cmd, status
+    Cmds.check_status last_prepared_cmd, status
     
     status
   end # #stream!

@@ -262,4 +262,26 @@ class Cmds
 
     return status
   end # .spawn
+  
+  
+  protected
+  # ========================================================================
+    
+    # Internal method that simply passes through to {Cmds.spawn}, serving as 
+    # a hook point for subclasses.
+    # 
+    # Accepts and returns the same things as 
+    # 
+    def spawn *args, **kwds, &io_block
+      Cmds.spawn  prepare(*args, **kwds),
+                  input: input,
+                  # include env if mode is spawn argument
+                  env: (env_mode == :spawn_arg ? env : {}),
+                  chdir: chdir,
+                  &io_block
+    end # #spawn
+    
+  # end protected
+  
+  
 end # Cmds

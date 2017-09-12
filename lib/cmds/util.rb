@@ -41,11 +41,22 @@ class Cmds
         esc value.to_s
       end
     }.join ' '
-  end # ::tokenize
+  end # .tokenize
   
-  # formats a command string 
+  
+  # Formats a command string.
+  # 
+  # @param [String] string
+  #   Command string to format.
+  # 
+  # @param [nil, :squish, :pretty, #call] with
+  #   How to format the command string.
+  # 
   def self.format string, with = :squish
     case with
+    when nil
+      string
+      
     when :squish
       NRSER.squish string
       
@@ -55,7 +66,8 @@ class Cmds
     else
       with.call string
     end
-  end
+  end # .format
+  
   
   def self.pretty_format string
     string = string.gsub(/\n(\s*\n)+\n/, "\n\n")

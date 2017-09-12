@@ -25,6 +25,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "rake"
   spec.add_development_dependency "rspec"
   spec.add_development_dependency "pastel"
-  spec.add_development_dependency "yard"
+  spec.add_development_dependency "yard", "~> 0.9.9"
   spec.add_development_dependency "redcarpet"
+  spec.add_development_dependency 'github-markup'
 end

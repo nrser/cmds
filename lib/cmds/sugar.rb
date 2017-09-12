@@ -22,8 +22,8 @@ end
 
 
 class Cmds
-  # create a new {Cmd} instance with the template and parameters and
-  # calls {Cmd#prepare}.
+  # create a new {Cmds} instance with the template and parameters and
+  # calls {Cmds#prepare}.
   # 
   # @param [String] template
   #   ERB template parameters are rendered into to create the command string.
@@ -42,7 +42,7 @@ class Cmds
   end
   
   
-  # create a new {Cmd} from template with parameters and call {Cmds#capture}
+  # create a new {Cmds} from template with parameters and call {Cmds#capture}
   # on it.
   # 
   # @param template (see .prepare)
@@ -61,7 +61,7 @@ class Cmds
   end
   
   
-  # create a new {Cmd} from template with parameters and call {Cmd#ok?}
+  # create a new {Cmds} from template with parameters and call {Cmd#ok?}
   # on it.
   # 
   # @param template (see .prepare)
@@ -82,7 +82,7 @@ class Cmds
   end
   
   
-  # create a new {Cmd} and 
+  # create a new {Cmds} and 
   def self.assert template, *args, **kwds, &io_block
     Cmds.new(template).capture(*args, **kwds, &io_block).assert
   end
@@ -98,7 +98,7 @@ class Cmds
   end # ::stream!
 
   
-  # creates a new {Cmd}, captures and returns stdout
+  # creates a new {Cmds}, captures and returns stdout
   # (sugar for `Cmds.capture(template, *args, **kwds, &input_block).out`).
   #
   # @see Cmd.out
@@ -116,7 +116,7 @@ class Cmds
   end
   
   
-  # creates a new {Cmd}, captures and returns stdout. raises an error if the 
+  # creates a new {Cmds}, captures and returns stdout. raises an error if the 
   # command fails.
   #
   # @see Cmd.out!
@@ -137,7 +137,7 @@ class Cmds
   end
   
   
-  # captures a new {Cmd}, captures and chomps stdout
+  # captures a new {Cmds}, captures and chomps stdout
   # (sugar for `Cmds.out(template, *args, **kwds, &input_block).chomp`).
   #
   # @see .out

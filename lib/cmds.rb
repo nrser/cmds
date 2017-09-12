@@ -11,13 +11,16 @@ require 'cmds/shell_eruby'
 require 'cmds/result'
 require 'cmds/sugar'
 require 'cmds/stream'
+require 'cmds/capture'
 
 class Cmds
   # ERB stirng template (with Cmds-specific extensions) for the command.
   # 
   # @return [String]
+  # 
   attr_reader :template
-
+  
+  
   # base/common positional parameters to render into the command
   # template.
   # 
@@ -27,9 +30,11 @@ class Cmds
   # {#stream}, etc.) accept `*args`, which will be appended to
   # these values to create the final array for rendering.   
   # 
-  # @return [Array<Object>]   
+  # @return [Array<Object>]
+  # 
   attr_reader :args
-
+  
+  
   # base/common keyword parameters to render into the command template.
   # 
   # defaults to `{}`.
@@ -39,7 +44,9 @@ class Cmds
   # these values to create the final hash for rendering.
   # 
   # @return [Hash{Symbol => Object}]
+  # 
   attr_reader :kwds
+  
 
   # string or readable IO-like object to use as default input to the
   # command.
@@ -49,21 +56,37 @@ class Cmds
   # value if present.
   # 
   # @return [String | #read]
+  # 
   attr_reader :input
 
+  
   # if `true`, will execution will raise an error on non-zero exit code.
   # 
   # defaults to `false`.
   # 
   # @return [Boolean]
+  # 
   attr_reader :assert
 
-  # environment variables to set for command execution.
+  
+  # Environment variables to set for command execution.
   # 
   # defaults to `{}`.
   # 
   # @return [Hash{String | Symbol => String}]
+  # 
   attr_reader :env
+  
+  
+  # How environment variables will be set for command execution - inline at
+  # the top of the command, or passed to `Process.spawn` as an argument.
+  # 
+  # See the `inline`
+  # 
+  # @return [:inline, :spawn_arg]
+  # 
+  attr_reader :env_mode
+  
 
   # format specifier symbol:
   # 
@@ -78,55 +101,152 @@ class Cmds
   attr_reader :format
 
 
-  # directory to run the command in.
+  # Optional directory to run the command in, set by the `:chdir` option
+  # in {Cmds#initialize}.
   # 
-  # @return [nil | String]
+  # @return [nil]
+  #   If the command will not change directory to run (default behavior).
+  # 
+  # @return [String | Pathname]
+  #   If the command will change directory to run.
+  #     
   attr_reader :chdir
+  
+  
+  
+  # The results of the last time {Cmds#prepare} was called on the instance.
+  # 
+  # A little bit funky, I know, but it turns out to be quite useful.
+  # 
+  # @return [nil]
+  #   If {Cmds#prepare} has never been called.
+  # 
+  # @return [String]
+  #   If {Cmds#prepare} has been called.
+  # 
+  attr_reader :last_prepared_cmd
+  
 
 
-  # construct a Cmd.
+  # Construct a `Cmds` instance.
   # 
   # @param [String] template
-  #   sets the {#template} attribute.
+  #   String template to use when creating the command string to send to the 
+  #   shell via {#prepare}.
+  #   
+  #   Allows ERB (positional and keyword), `%s` (positional) and `%{name}` 
+  #   (keyword) placeholders.
+  #   
+  #   Available as the {#template} attribute.
   # 
-  # @param [Hash] opts
+  # @param [Array<Object>] args:
+  #   Positional arguments to interpolate into the template on {#prepare}.
+  #   
+  #   Available as the {#args} attribute.
   # 
-  # @option opts [Array<Object>] :args
-  #   sets the {#args} attribute.
+  # @param [Boolean] assert:
+  #   When `true`, execution will raise an error if the command doesn't exit 
+  #   successfully (if the command exits with any status other than `0`).
+  #   
+  #   Available as the {#assert} attribute. 
   # 
-  # @option opts [Hash{Symbol => Object}] :kwds
-  #   sets the {#kwds} attribute.
+  # @param [nil | String | Pathname] chdir:
+  #   Optional directory to change into when executing.
+  #   
+  #   Available as the {#chdir} attribute.
   # 
-  # @option opts [String | #read] :input
-  #   sets the {#input} attribute.
+  # @param [Hash{(String | Symbol) => String}] env:
+  #   Hash of environment variables to set when executing the command.
+  #   
+  #   Available as the {#env} attribute.
   # 
-  # @option opts [Hash{Symbol => String}] :env
-  #   sets the {#env} attribute.
+  # @param [:inline, :spawn_arg] env_mode:
+  #   Controls how the env vars are added to the command.
+  #   
+  #   -   `:inline` adds them to the top of the prepared string. This is nice
+  #       if you want do print the command out and paste it into a terminal.
+  #       This is the default.
+  #   
+  #   -   `:spawn_arg` passes them as an argument to `Process.spawn`. In this 
+  #       case they will not be included in the output of {#prepare} 
+  #       (or {#render}).
+  #   
+  #   Available as the {#env_mode} attribute.
   # 
-  # @option opts [:squish, :pretty] :format
-  #   sets the {#format} attribute.
+  # @param [nil, :squish, :pretty, #call] format:
+  #   Dictates how to format the rendered template string before passing
+  #   off to the shell.
+  #   
+  #   This feature lets you write templates in a more relaxed
+  #   manner without `\` line-endings all over the place.
+  #   
+  #   -   `nil` performs **no formatting at all*.
+  #       
+  #   -   `:squish` reduces any consecutive whitespace (including newlines) to 
+  #       a single space. This is the default.
+  #   
+  #   -   `:pretty` tries to keep the general formatting but make it acceptable 
+  #       to the shell by adding `\` at the end of lines. See 
+  #       {Cmds.pretty_format}.
+  #       
+  #   -   An object that responds to `#call` will be called with the command
+  #       string as it's only argument for custom formatting.
+  #   
+  #   See {Cmds.format} for more details.
+  #   
+  #   Available as the {#format} attribute.
   # 
-  # @option opts [nil | String] :chdir
-  #   sets the {#chdir} attribute.
+  # @param [nil | String | #read] input:
+  #   Input to send to the command on execution. Can be a string or an
+  #   `IO`-like object that responds to `#read`.
+  #   
+  #   Available as the {#input} attribute.
   # 
-  def initialize template, **opts
+  # @param [Hash{Symbol => Object}] kwds:
+  #   Keyword arguments to shell escape and interpolate into the template on
+  #   {#prepare}.
+  #   
+  #   Available as the {#kwds} attribute.
+  # 
+  def initialize  template,
+                  args: [],
+                  assert: false,
+                  chdir: nil,
+                  env: {},
+                  env_mode: :inline,
+                  format: :squish,
+                  input: nil,
+                  kwds: {}
     Cmds.debug "Cmd constructing...",
       template: template,
-      opts: opts
+      opts: {
+        args: args,
+        kwds: kwds,
+        input: input,
+        assert: assert,
+        env: env,
+        format: format,
+        env_mode: env_mode,
+        chdir: chdir,
+      }
 
     @template = template
-    @args = (opts[:args] || []).freeze
-    @kwds = (opts[:kwds] || {}).freeze
-    @input = opts[:input] || nil
-    @assert = opts[:assert] || false
-    @env = (opts[:env] || {}).freeze
-    @format = opts[:format] || :squish
-    @env_mode = opts[:env_mode] || :inline
-    @chdir = opts[:chdir] || nil
+    @args = args.freeze
+    @kwds = kwds.freeze
+    @input = input
+    @assert = assert
+    @env = env.freeze
+    @format = format
+    @env_mode = env_mode
+    @chdir = chdir
+    
+    # An internal cache of the last result of calling {#prepare}, or `nil` if
+    # {#prepare} has never been called. Kinda funky but ends up being useful.
+    @last_prepared_cmd = nil
   end # #initialize
 
 
-  # returns a new {Cmd} with the parameters and input merged in
+  # returns a new {Cmds} with the parameters and input merged in
   def curry *args, **kwds, &input_block
     self.class.new @template, {
       args: (@args + args),
@@ -179,86 +299,8 @@ class Cmds
   #   the prepared command string.
   # 
   def prepare *args, **kwds
-    Cmds.format render(*args, **kwds), @format
+    @last_prepared_cmd = Cmds.format render(*args, **kwds), @format
   end # #prepare
-  
-
-  # executes the command and returns a {Cmds::Result} with the captured
-  # outputs.
-  # 
-  # @param [Array<Object>] *args
-  #   positional parameters to append to those in `@args` for rendering 
-  #   into the command string.
-  # 
-  # @param [Hash{Symbol => Object}] **kwds
-  #   keyword parameters that override those in `@kwds` for rendering
-  #   into the command string.
-  # 
-  # @param [#call] &input_block
-  #   optional block that returns a string or readable object to override
-  #   `@input`.
-  # 
-  # @return [Cmds::Result]
-  #   result of execution with command string, status, stdout and stderr.
-  # 
-  def capture *args, **kwds, &input_block
-    Cmds.debug "entering Cmds#capture",
-      args: args,
-      kwds: kwds,
-      input: input
-    
-    # prepare the command string
-    cmd = prepare *args, **kwds
-    
-    # extract input from block via `call` if one is provided,
-    # otherwise default to instance variable (which may be `nil`)
-    input = input_block.nil? ? @input : input_block.call
-    
-    Cmds.debug "prepared",
-      cmd: cmd,
-      input: input
-    
-    # strings output will be concatenated onto
-    out = ''
-    err = ''
-
-    Cmds.debug "calling Cmds.spawn..."
-    
-    status = Cmds.spawn(
-      cmd,
-      # include env if mode is spawn argument
-      env: (@env_mode == :spawn_arg ? @env : {}),
-      chdir: @chdir
-    ) do |io|
-      # send the input to stream, which sends it to spawn
-      io.in = input
-
-      # and concat the output lines as they come in
-      io.on_out do |line|
-        out += line
-      end
-
-      io.on_err do |line|
-        err += line
-      end
-    end
-    
-    Cmds.debug "Cmds.spawn completed",
-      status: status
-
-    # build a Result
-    # result = Cmds::Result.new cmd, status, out_reader.value, err_reader.value
-    result = Cmds::Result.new cmd, status, out, err
-
-    # tell the Result to assert if the Cmds has been told to, which will
-    # raise a SystemCallError with the exit status if it was non-zero
-    result.assert if @assert
-
-    return result
-  end # #capture
-
-
-  alias_method :call, :capture
 
 
   # execute command and return `true` if it exited successfully.
