@@ -47,7 +47,7 @@ class Cmds
   #   if `&io_block` has arity greater than 1.
   # 
   def self.spawn cmd, **opts, &io_block
-    Cmds.debug "entering Cmds#spawn",
+    Cmds.debug "entering Cmds.spawn",
       cmd: cmd,
       opts: opts,
       io_block: io_block
