@@ -13,7 +13,7 @@ class Cmds
       @out = block
     end
 
-    # called in seperate thread handling process IO
+    # called in separate thread handling process IO
     def thread_send_out line
       @queue << [:out, line]
     end
@@ -22,7 +22,7 @@ class Cmds
       @err = block
     end
 
-    # called in seperate thread handling process IO
+    # called in separate thread handling process IO
     def thread_send_err line
       @queue << [:err, line]
     end
