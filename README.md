@@ -1,18 +1,92 @@
-# cmds
+Cmds
+=============================================================================
 
-cmds tries to make it easier to read, write and remember using shell commands in Ruby.
+`Cmds` tries to make it easier to read, write and remember using shell commands in Ruby.
 
-it treats generating shell the in a similar fashion to generating SQL or HTML.
+It treats generating shell the in a similar fashion to generating SQL or HTML.
+
+1.  [Status](#status)
+3.  [Real-World Examples](#real-world-examples)
+2.  [Installation](#installation)
 
 
-## status
+-----------------------------------------------------------------------------
+Status
+-----------------------------------------------------------------------------
 
-eh, it's kinda starting to work... i'll be using it for stuff and seeing how it goes, but no promises until `1.0` of course.
+Ya know, before you get too excited...
+
+It's kinda starting to work. I'll be using it for stuff and seeing how it goes, but no promises until `1.0` of course.
 
 
-## installation
+-----------------------------------------------------------------------------
+Real-World Examples
+-----------------------------------------------------------------------------
 
-Add this line to your application's Gemfile:
+-   Instead of
+    
+    ```Ruby
+    `psql -U #{ db_config['username'] || ENV['USER'] } #{ db_config['database']} <     #{ filepath.shellescape }`
+    ```
+    
+    write
+    
+    ```Ruby
+    Cmds 'psql %{opts} %{db} < %{dump}',
+      db: db_config['database'],
+      dump: filepath,
+      opts: {
+        username: db_config['username'] || ENV['USER']
+      }
+    ```
+    
+    to run a command like
+    
+    ```bash
+    psql --username=nrser that_db < ./some/file/path
+    ```
+    
+    
+-   Instead of
+    
+    ```Ruby
+    `aws s3 sync s3://#{ PROD_APP_NAME } #{ s3_path.shellescape }`
+    ```
+    
+    write
+    
+    ```Ruby
+    Cmds 'aws s3 sync %{uri} %{path}', 
+      uri: "s3://#{ PROD_APP_NAME }",
+      path: s3_path
+    ```
+
+
+-   Instead of
+    
+    ```Ruby
+    `PGPASSWORD=#{ config[:password].shellescape } pg_dump -U #{     config[:username].shellescape } -h #{ config[:host].shellescape } -p #{     config[:port] } #{ config[:database].shellescape } > #{ filepath.shellescape }`
+    ```
+    
+    write
+    
+    ```Ruby
+    Cmds 'PGPASSWORD=%{password} pg_dump %{opts} %{database} > %{filepath}',
+      password: config[:password],
+      database: config[:database],
+      filepath: filepath,
+      opts: {
+        username: config[:username],
+        host: config[:host],
+        port: config[:port],
+      }
+    ```
+
+-----------------------------------------------------------------------------
+Installation
+-----------------------------------------------------------------------------
+
+Add this line to your application's `Gemfile`:
 
 ```
 gem 'cmds'
@@ -31,61 +105,6 @@ Or install it yourself as:
 ```
 $ gem install cmds
 ```
-
-
-
-## real-world examples
-
-instead of
-
-```
-`psql -U #{ db_config['username'] || ENV['USER'] } #{ db_config['database']} < #{ filepath.shellescape }`
-```
-
-write
-
-```
-Cmds 'psql %{opts} %{db} < %{dump}',
-  db: db_config['database'],
-  dump: filepath,
-  opts: {
-    username: db_config['username'] || ENV['USER']
-  }
-```
-
-instead of
-
-```
-`aws s3 sync s3://#{ PROD_APP_NAME } #{ s3_path.shellescape }`
-```
-
-write
-
-```
-Cmds 'aws s3 sync %{uri} %{path}', uri: "s3://#{ PROD_APP_NAME }"
-                                   path: s3_path
-```
-
-instead of
-
-```
-`PGPASSWORD=#{ config[:password].shellescape } pg_dump -U #{ config[:username].shellescape } -h #{ config[:host].shellescape } -p #{ config[:port] } #{ config[:database].shellescape } > #{ filepath.shellescape }`
-```
-
-write
-
-```
-Cmds 'PGPASSWORD=%{password} pg_dump %{opts} %{database} > %{filepath}',
-  password: config[:password],
-  database: config[:database],
-  filepath: filepath,
-  opts: {
-    username: config[:username],
-    host: config[:host],
-    port: config[:port],
-  }
-```
-
 
 
 ## architecture
@@ -136,7 +155,7 @@ all `Cmds` instance execution methods have the same form for accepting these:
     
     `Cmds "cp <%= arg %> <%= arg %>", [src_path, dest_path]`
     
-    note that the arguments need to be enclosed in square braces. Cmds does **NOT** use *splat for positional arguments because it would make a `Hash` final parameter ambiguous.
+    note that the arguments need to be enclosed in square braces. Cmds does **NOT** use \*splat for positional arguments because it would make a `Hash` final parameter ambiguous.
     
 2. keyword arguments are provided as optional hash that must be the last argument:
     
@@ -288,9 +307,15 @@ Cmds "blah <%= maybe? %> <%= arg %>", ["value"]
 Cmds "blah <%= maybe? %> <%= arg %>", ["value"], maybe: "yes!"
 ```
 
-### shortcuts
+************************************************************************
 
-there are support for `sprintf`-style shortcuts.
+
+### Shortcuts
+
+`Cmds` has (limited, custom) support for [printf][]-style shortcuts.
+
+[printf]: https://en.wikipedia.org/wiki/Printf_format_string
+
 
 **positional**
 
