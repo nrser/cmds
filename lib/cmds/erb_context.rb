@@ -2,10 +2,11 @@ class Cmds
   class ERBContext < BasicObject
     attr_reader :args
     
-    def initialize args, kwds
+    def initialize args, kwds, tokenize_options_opts: {}
       @args = args
       @kwds = kwds
       @arg_index = 0
+      @tokenize_options_opts = tokenize_options_opts
     end
 
     def method_missing sym, *args, &block

@@ -80,9 +80,11 @@ class Cmds
       merge!( opts )
   end
   
+  
   # proxy through to class method {Cmds.defaults}.
   # 
   def defaults opts, keys = '*', extras = {}
     self.class.defaults opts, keys, extras
   end
+  
 end

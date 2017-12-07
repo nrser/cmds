@@ -208,37 +208,19 @@ class Cmds
   #   
   #   Available as the {#kwds} attribute.
   # 
-  def initialize  template,
-                  args: [],
-                  assert: false,
-                  chdir: nil,
-                  env: {},
-                  env_mode: :inline,
-                  format: :squish,
-                  input: nil,
-                  kwds: {}
+  def initialize  template, **opts
+    opts = defaults opts
+    
     Cmds.debug "Cmd constructing...",
       template: template,
-      opts: {
-        args: args,
-        kwds: kwds,
-        input: input,
-        assert: assert,
-        env: env,
-        format: format,
-        env_mode: env_mode,
-        chdir: chdir,
-      }
+      opts: opts
 
     @template = template
-    @args = args.freeze
-    @kwds = kwds.freeze
-    @input = input
-    @assert = assert
-    @env = env.freeze
-    @format = format
-    @env_mode = env_mode
-    @chdir = chdir
+    
+    # Assign options to instance variables
+    opts.each { |key, value|
+      instance_variable_set "@#{ key }", value
+    }
     
     # An internal cache of the last result of calling {#prepare}, or `nil` if
     # {#prepare} has never been called. Kinda funky but ends up being useful.
@@ -274,8 +256,21 @@ class Cmds
   #   the rendered command string.
   # 
   def render *args, **kwds
-    context = Cmds::ERBContext.new((self.args + args), self.kwds.merge(kwds))
-    erb = Cmds::ShellEruby.new Cmds.replace_shortcuts(self.template)
+    # Create the context for ERB
+    context = Cmds::ERBContext.new(
+      (self.args + args),
+      
+      self.kwds.merge( kwds ),
+      
+      tokenize_options_opts: TOKENIZE_OPT_KEYS.
+        each_with_object( {} ) { |key, hash|
+          value = instance_variable_get "@#{ key}"
+          hash[key] = value unless value.nil?
+        }
+    )
+    
+    erb = Cmds::ShellEruby.new Cmds.replace_shortcuts( self.template )
+    
     rendered = NRSER.dedent erb.result(context.get_binding)
     
     if self.env_mode == :inline && !self.env.empty?

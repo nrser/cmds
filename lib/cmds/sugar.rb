@@ -37,8 +37,14 @@ class Cmds
   # @return [String]
   #   rendered and formatted command string ready to be executed.
   # 
-  def self.prepare template, *args, **kwds
-    Cmds.new(template).prepare *args, **kwds
+  def self.prepare template, *args, **kwds, &options_block
+    options = if options_block
+      options_block.call
+    else
+      {}
+    end
+    
+    Cmds.new(template, **options).prepare *args, **kwds
   end
   
   

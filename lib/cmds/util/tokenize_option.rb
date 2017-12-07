@@ -4,6 +4,8 @@ require 'nrser/refinements'
 require_relative "defaults"
 
 class Cmds
+  TOKENIZE_OPT_KEYS = [:array_mode, :array_join_string, :false_mode]
+  
   # turn an option name and value into an array of shell-escaped string
   # token suitable for use in a command.
   # 
@@ -13,7 +15,7 @@ class Cmds
   # @param [*] value
   #   value of the option.
   # 
-  # @param [Hash] opts
+  # @param [Hash] **opts
   # @option [Symbol] :array_mode (:multiple)
   #   one of:
   #   
@@ -33,8 +35,10 @@ class Cmds
   # @return [Array<String>]
   #   string tokens.
   # 
-  def self.tokenize_option name, value, opts = {}
-    opts = defaults opts, [:array_mode, :array_join_string, :false_mode]
+  def self.tokenize_option name, value, **opts
+    pp opts: opts
+    
+    opts = defaults opts, TOKENIZE_OPT_KEYS
     
     unless name.is_a?(String) && name.length > 0
       raise ArgumentError.new NRSER.squish <<-END
@@ -72,7 +76,7 @@ class Cmds
           esc(value.join opts[:array_join_string]) ]
         
       when :json
-        [prefix + esc(name) + separator + esc(JSON.dump value)]
+        [prefix + esc(name) + separator + "'" + JSON.dump(value).gsub(%{'}, %{'"'"'}) + "'"]
         
       else
         # SOL

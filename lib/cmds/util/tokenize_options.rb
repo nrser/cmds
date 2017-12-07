@@ -29,8 +29,8 @@ class Cmds
   # i can't think of any right now, but i swear i've seen commands that take
   # opts that way.
   # 
-  def self.tokenize_options hash, opts = {}
-    opts = defaults opts, [:array_mode, :array_join_string, :false_mode]
+  def self.tokenize_options hash, **opts
+    opts = defaults opts, TOKENIZE_OPT_KEYS
     
     hash.map {|key, value|
       # keys need to be strings
@@ -43,7 +43,7 @@ class Cmds
       key_a <=> key_b
 
     }.map {|key, value|
-      tokenize_option key, value
+      tokenize_option key, value, **opts
       
     }.flatten.join ' '
   end # .tokenize_options

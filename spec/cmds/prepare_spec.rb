@@ -207,4 +207,48 @@ describe "Cmds.prepare" do
       ).to eq "git add x y z"
     end
   end
+  
+  describe "options with list values" do
+    
+    context "default behavior (:join)" do
+      it "outputs a comma-separated list" do
+        expect(
+          Cmds.prepare 'blah <%= opts %>', opts: {list: ['a', 'b', 'see']}
+        ).to eq 'blah --list=a,b,see'
+      end
+    end
+    
+    context "specify :repeat behavior" do
+      it "outputs repeated options" do
+        expect(
+          Cmds.prepare 'blah <%= opts %>',
+            opts: { list: ['a', 'b', 'see'] } {
+            { array_mode: :repeat }
+          }
+        ).to eq 'blah --list=a --list=b --list=see'
+      end
+    end
+    
+    context "specify :json behavior" do
+      it "outputs JSON-encoded options" do
+        expect(
+          Cmds.prepare 'blah <%= opts %>',
+            opts: { list: ['a', 'b', 'see'] } {
+            { array_mode: :json }
+          }
+        ).to eq %{blah --list='["a","b","see"]'}
+      end
+      
+      it "handles single quotes in the string" do
+        expect(
+          Cmds.prepare 'blah <%= opts %>',
+            opts: { list: ["you're the best"] } {
+            { array_mode: :json }  
+          }
+        ).to eq %{blah --list='["you'"'"'re the best"]'}
+      end
+    end
+    
+  end # "options with list values"
+  
 end # ::sub

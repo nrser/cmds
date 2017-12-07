@@ -29,14 +29,14 @@ class Cmds
   # @return [String]
   #   tokenized string ready for the shell.
   # 
-  def self.tokenize *values
+  def self.tokenize *values, **opts
     values.map {|value|
       case value
       when nil
         # nil is just an empty string, NOT an empty string bash token
         ''
       when Hash
-        tokenize_options value
+        tokenize_options value, **opts
       else
         esc value.to_s
       end
