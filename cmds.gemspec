@@ -28,4 +28,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "yard", "~> 0.9.9"
   spec.add_development_dependency "redcarpet"
   spec.add_development_dependency 'github-markup'
+  
+  # A better REPL
+  spec.add_development_dependency 'pry'
 end
