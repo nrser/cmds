@@ -30,7 +30,24 @@ class Cmds
     
     # what to do with false array values
     false_mode: :omit,
-  }.map {|k, v| [k, v.freeze]}.to_h
+    
+    # Stick ENV var defs inline at beginning of command
+    env_mode: :inline,
+    
+    # No additional environment
+    env: {},
+    
+    # Don't change directories
+    chdir: nil,
+    
+    # Don't asset (raise error if exit code is not 0)
+    assert: false,
+    
+    # No input
+    input: nil,
+    
+  }.map { |k, v| [k, v.freeze] }.to_h.freeze
+  
   
   # merge an method call options hash with common defaults for the module.
   # 
@@ -51,7 +68,7 @@ class Cmds
   #   
   def self.defaults opts, keys = '*', extras = {}
     if keys == '*'
-      DEFAULTS
+      DEFAULTS.dup
     else      
       keys.
         map {|key|
@@ -59,8 +76,8 @@ class Cmds
         }.
         to_h
     end.
-      merge!(extras).
-      merge!(opts)
+      merge!( extras ).
+      merge!( opts )
   end
   
   # proxy through to class method {Cmds.defaults}.
