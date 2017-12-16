@@ -296,7 +296,13 @@ class Cmds
   def prepare *args, **kwds
     @last_prepared_cmd = Cmds.format render(*args, **kwds), self.format
   end # #prepare
-
+  
+  
+  # @!group Execution Instance Methods
+  # ----------------------------------------------------------------------------
+  # 
+  # Methods that run the command.
+  # 
 
   # execute command and return `true` if it exited successfully.
   # 
@@ -423,4 +429,7 @@ class Cmds
   def err *args, **kwds, &input_block
     capture(*args, **kwds, &input_block).err
   end
+  
+  # @!endgroup Execution Instance Methods
+  
 end # Cmds

@@ -11,51 +11,81 @@ require 'cmds/pipe'
 require 'cmds/io_handler'
 
 class Cmds
-  # internal core function to spawn and stream inputs and/or outputs using
+  # Low-level static method to spawn and stream inputs and/or outputs using
   # threads.
   # 
-  # originally inspired by
+  # This is the core execution functionality of the whole library - everything
+  # end up here.
+  # 
+  # **WARNING** - This method runs the `cmd` string **AS IS** - no escaping, 
+  # formatting, interpolation, etc. are done at this point.
+  # 
+  # The whole rest of the library is built on top of this method to provide 
+  # that stuff, and if you're using this library, you probably want to use that
+  # stuff.
+  # 
+  # You should not need to use this method directly unless you are extending
+  # the library's functionality.
+  # 
+  # Originally inspired by
   # 
   # https://nickcharlton.net/posts/ruby-subprocesses-with-stdout-stderr-streams.html
   # 
   # with major modifications from looking at Ruby's open3 module.
   # 
+  # At the end of the day ends up calling `Process.spawn`.
+  # 
   # @param [String] cmd
-  #   shell-ready command string.
+  #   **SHELL-READY** command string. This is important - whatever you feed in
+  #   here will be run **AS IS** - no escaping, formatting, etc.
   # 
   # @param [nil | String | #read] input
-  #   string or readable input. here so that Cmds instances can pass their
-  #   `@input` instance variable -- `&io_block` overrides it.
+  #   String or readable input, or `nil` (meaning no input or use the
+  #   `io_block`).
+  #   
+  #   Allows {Cmds} instances can pass their `@input` instance variable.
   # 
-  # @param [Hash{Symbol | String => Object}] env
-  #   blah
+  # @param [Hash{(Symbol | String) => Object}] env
+  #   Hash of `ENV` vars to provide for the command.
+  #   
+  #   We convert symbol keys to strings, but other than that just pass it
+  #   through to `Process.spawn`, which I think will `#to_s` everything.
+  #   
+  #   Pretty much you want to have everything be strings or symbols for this
+  #   to make any sense but we're not checking shit at the moment.
+  #   
+  #   If the {Cmds#env_mode} is `:inline` it should have already prefixed 
+  #   `cmd` with the definitions and not provide this keyword (or provide 
+  #   `{}`).
   # 
   # @param [#call & (#arity ∈ {0, 1})] &io_block
-  #   optional block to handle io. behavior depends on arity:
+  #   Optional block to handle io. Behavior depends on arity:
   #   
-  #   -   arity `0`
-  #       -   block is called and expected to return an object
+  #   -   Arity `0`
+  #       -   Block is called and expected to return an object
   #           suitable for input (`nil`, `String` or `IO`-like).
-  #   -   arity `1`
-  #       -   block is called with the {Cmds::IOHandler} instance for the
+  #   -   Arity `1`
+  #       -   Block is called with the {Cmds::IOHandler} instance for the
   #           execution, which it can use to handle input and outputs.
   # 
   # @return [Fixnum]
-  #   command exit status.
+  #   Command exit status.
   # 
   # @raise [ArgumentError]
-  #   if `&io_block` has arity greater than 1.
+  #   If `&io_block` has arity greater than 1.
   # 
-  def self.spawn cmd, **opts, &io_block
+  def self.spawn  cmd,
+                  env: {},
+                  input: nil,
+                  chdir: nil,
+                  &io_block
     Cmds.debug "entering Cmds#spawn",
       cmd: cmd,
-      opts: opts,
+      env: env,
+      input: input,
+      chdir: chdir,
       io_block: io_block
     
-    env = opts[:env] || {}
-    input = opts[:input]
-    chdir = opts[:chdir]
-
     # create the handler that will be yielded to the input block
     handler = Cmds::IOHandler.new
 
@@ -64,6 +94,12 @@ class Cmds
     # if a block was provided it overrides the `input` argument.
     # 
     if io_block
+      # Check that `input` wasn't provided.
+      unless input.nil?
+        raise ArgumentError,
+          "Don't call Cmds.spawn with `input:` keyword arg and a block"
+      end
+      
       case io_block.arity
       when 0
         # when the input block takes no arguments it returns the input
@@ -270,7 +306,10 @@ class Cmds
     # Internal method that simply passes through to {Cmds.spawn}, serving as 
     # a hook point for subclasses.
     # 
-    # Accepts and returns the same things as 
+    # Accepts and returns the same things as {Cmds#stream}.
+    # 
+    # @param (see Cmds#stream)
+    # @return (see Cmds#stream)
     # 
     def spawn *args, **kwds, &io_block
       Cmds.spawn  prepare(*args, **kwds),
