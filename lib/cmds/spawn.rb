@@ -40,10 +40,11 @@ class Cmds
   #   here will be run **AS IS** - no escaping, formatting, etc.
   # 
   # @param [nil | String | #read] input
-  #   String or readable input, or `nil` (meaning no input or use the
-  #   `io_block`).
+  #   String or readable input, or `nil` (meaning no input).
   #   
   #   Allows {Cmds} instances can pass their `@input` instance variable.
+  #   
+  #   Don't provide input here and via `io_block`.
   # 
   # @param [Hash{(Symbol | String) => Object}] env
   #   Hash of `ENV` vars to provide for the command.
@@ -67,12 +68,17 @@ class Cmds
   #   -   Arity `1`
   #       -   Block is called with the {Cmds::IOHandler} instance for the
   #           execution, which it can use to handle input and outputs.
+  #   
+  #   Don't provide input here and via `input` keyword arg.
   # 
   # @return [Fixnum]
   #   Command exit status.
   # 
   # @raise [ArgumentError]
   #   If `&io_block` has arity greater than 1.
+  # 
+  # @raise [ArgumentError]
+  #   If input is provided via the `input` keyword arg and the `io_block`.
   # 
   def self.spawn  cmd,
                   env: {},
@@ -93,24 +99,36 @@ class Cmds
     # 
     # if a block was provided it overrides the `input` argument.
     # 
-    if io_block
-      # Check that `input` wasn't provided.
-      unless input.nil?
-        raise ArgumentError,
-          "Don't call Cmds.spawn with `input:` keyword arg and a block"
-      end
-      
+    if io_block      
       case io_block.arity
       when 0
         # when the input block takes no arguments it returns the input
+        
+        # Check that `:input` kwd wasn't provided.
+        unless input.nil?
+          raise ArgumentError,
+            "Don't call Cmds.spawn with `:input` keyword arg and a block"
+        end
+        
         input = io_block.call
+        
       when 1
         # when the input block takes one argument, give it the handler and
         # ignore the return value
         io_block.call handler
 
         # if input was assigned to the handler in the block, use it as input
-        input = handler.in unless handler.in.nil?
+        unless handler.in.nil?
+          
+          # Check that `:input` kwd wasn't provided.
+          unless input.nil?
+            raise ArgumentError,
+              "Don't call Cmds.spawn with `:input` keyword arg and a block"
+          end
+          
+          input = handler.in
+        end
+        
       else
         # bad block provided
         raise ArgumentError.new NRSER.squish <<-BLOCK
