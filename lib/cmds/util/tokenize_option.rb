@@ -36,8 +36,6 @@ class Cmds
   #   string tokens.
   # 
   def self.tokenize_option name, value, **opts
-    pp opts: opts
-    
     opts = defaults opts, TOKENIZE_OPT_KEYS
     
     unless name.is_a?(String) && name.length > 0
