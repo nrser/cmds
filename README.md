@@ -26,7 +26,7 @@ Real-World Examples
 -   Instead of
     
     ```Ruby
-    `psql -U #{ db_config['username'] || ENV['USER'] } #{ db_config['database']} <     #{ filepath.shellescape }`
+    `psql -U #{ db_config['username'] || ENV['USER'] } #{ db_config['database']} < #{ filepath.shellescape }`
     ```
     
     write
@@ -56,7 +56,7 @@ Real-World Examples
     write
     
     ```Ruby
-    Cmds 'aws s3 sync %{uri} %{path}', 
+    Cmds 'aws s3 sync %{uri} %{path}',
       uri: "s3://#{ PROD_APP_NAME }",
       path: s3_path
     ```
@@ -165,7 +165,7 @@ all `Cmds` instance execution methods have the same form for accepting these:
     
 3. input and output is handled with blocks:
     
-    `Cmds(“wc -l”){ “one\ntwo\nthree\n” } 
+    `Cmds(“wc -l”){ “one\ntwo\nthree\n” }
     
     Cmds.stream './test/tick.rb <%= times %>', times: times do |io|
       io.on_out do |line|
@@ -213,7 +213,7 @@ Cmds.sub "psql <%= arg %> <%= arg %> < <%= arg %>", [
 
 internally this translates to calling `@args.fetch(@arg_index)` and increments `@arg_index` by 1.
 
-this will raise an error if it's called after using the last positional argument, but will not complain if all positional arguments are not used. this prevents using a keyword arguments named `arg` without accessing the keywords hash directly. 
+this will raise an error if it's called after using the last positional argument, but will not complain if all positional arguments are not used. this prevents using a keyword arguments named `arg` without accessing the keywords hash directly.
 
 the arguments may also be accessed directly though the bound class's `@args` instance variable:
 
