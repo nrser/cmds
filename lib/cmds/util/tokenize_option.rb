@@ -4,7 +4,15 @@ require 'nrser/refinements'
 require_relative "defaults"
 
 class Cmds
-  TOKENIZE_OPT_KEYS = [:array_mode, :array_join_string, :false_mode]
+  TOKENIZE_OPT_KEYS = [
+    :array_mode,
+    :array_join_string,
+    :false_mode,
+    :short_opt_separator,
+    :long_opt_separator,
+    :hash_mode,
+    :hash_join_string,
+  ].freeze
   
   # turn an option name and value into an array of shell-escaped string
   # token suitable for use in a command.
@@ -47,10 +55,10 @@ class Cmds
     
     prefix, separator = if name.length == 1
       # -b <value> style
-      ['-', ' ']
+      [ '-', opts[:short_opt_separator] ]
     else
       # --blah=<value> style
-      ['--', '=']
+      [ '--', opts[:long_opt_separator] ]
     end
       
     case value
@@ -68,9 +76,9 @@ class Cmds
         
       when :join
         # `-b 1,2,3` / `--blah=1,2,3` style
-        [ prefix + 
-          esc(name) + 
-          separator + 
+        [ prefix +
+          esc(name) +
+          separator +
           esc(value.join opts[:array_join_string]) ]
         
       when :json
@@ -79,10 +87,21 @@ class Cmds
       else
         # SOL
         raise ArgumentError.new NRSER.squish <<-END
-          bad array_mode option: #{ opts[:array_mode] }, 
+          bad array_mode option: #{ opts[:array_mode] },
           should be :repeat, :join or :json
         END
         
+      end
+    
+    when Hash
+      case opts[:hash_mode]
+      when :join
+        tokenize_option \
+          name,
+          value.map { |k, v| [k, v].join opts[:hash_join_string] },
+          **opts
+      else
+        raise "HERE: #{ opts[:hash_mode].inspect }"
       end
       
     when true
@@ -104,7 +123,7 @@ class Cmds
         
       else
         raise ArgumentError.new NRSER.squish <<-END
-          bad :false_mode option: #{ opts[:false_mode] }, 
+          bad :false_mode option: #{ opts[:false_mode] },
           should be :omit or :no
         END
       end

@@ -46,6 +46,19 @@ class Cmds
     # No input
     input: nil,
     
+    # What to use to separate "short" opt names (single character) from their
+    # values. I've commonly seen ' ' (`-x VALUE`) and '' (`-xVALUE`).
+    short_opt_separator: ' ',
+    
+    # What to use to separate "long" opt names (more than one character) from
+    # their values. I've commonly seen '=' (`--name=VALUE`)
+    # and ' ' (`--name VALUE`).
+    long_opt_separator: '=',
+    
+    hash_mode: :join,
+    
+    hash_join_string: ':',
+    
   }.map { |k, v| [k, v.freeze] }.to_h.freeze
   
   
@@ -69,7 +82,7 @@ class Cmds
   def self.defaults opts, keys = '*', extras = {}
     if keys == '*'
       DEFAULTS.dup
-    else      
+    else
       keys.
         map {|key|
           [key, DEFAULTS.fetch(key)]

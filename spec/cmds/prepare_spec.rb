@@ -233,22 +233,73 @@ describe "Cmds.prepare" do
       it "outputs JSON-encoded options" do
         expect(
           Cmds.prepare 'blah <%= opts %>',
-            opts: { list: ['a', 'b', 'see'] } {
-            { array_mode: :json }
-          }
+            opts: { list: ['a', 'b', 'see'] } {{ array_mode: :json }}
         ).to eq %{blah --list='["a","b","see"]'}
       end
       
       it "handles single quotes in the string" do
         expect(
           Cmds.prepare 'blah <%= opts %>',
-            opts: { list: ["you're the best"] } {
-            { array_mode: :json }  
-          }
+            opts: { list: ["you're the best"] } {{ array_mode: :json }}
+        ).to eq %{blah --list='["you'"'"'re the best"]'}
+        
+        
+        expect(
+          Cmds.new(
+            'blah <%= opts %>',
+            kwds: {
+              opts: { list: ["you're the best"] }
+            },
+            array_mode: :json,
+          ).prepare
         ).to eq %{blah --list='["you'"'"'re the best"]'}
       end
     end
     
   end # "options with list values"
   
-end # ::sub
+  
+  describe %{space-separated "long" opts} do
+    
+    it %{should work when `long_opt_separator: ' '` passed to Cmds.new} do
+      expect(
+        Cmds.new(
+          'blah <%= opts %>',
+          kwds: {
+            opts: {
+              file: 'some/path.rb'
+            }
+          },
+          long_opt_separator: ' '
+        ).prepare
+      ).to eq %{blah --file some/path.rb}
+    end
+    
+  end # "space-separated long options"
+  
+  
+  describe "hash opt values" do
+    
+    it do
+      expect(
+        Cmds.prepare(
+          'docker build <%= opts %>',
+          opts: {
+            'build-arg' => {
+              'from_image' => 'blah:0.1.2',
+              'yarn_version' => '1.3.2',
+            }
+          }
+        ) {{
+          array_mode: :repeat,
+          long_opt_separator: ' ',
+          hash_join_string: '=',
+        }}
+      ).to eq %{docker build --build-arg from_image=blah:0.1.2 --build-arg yarn_version=1.3.2}
+    end
+    
+  end # "hash opt values"
+  
+  
+  
+end # ::prepare
