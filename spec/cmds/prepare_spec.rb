@@ -295,7 +295,7 @@ describe "Cmds.prepare" do
           long_opt_separator: ' ',
           hash_join_string: '=',
         }}
-      ).to eq %{docker build --build-arg from_image=blah:0.1.2 --build-arg yarn_version=1.3.2}
+      ).to eq %{docker build --build-arg from_image\\=blah:0.1.2 --build-arg yarn_version\\=1.3.2}
     end
     
   end # "hash opt values"
