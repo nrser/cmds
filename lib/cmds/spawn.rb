@@ -1,26 +1,51 @@
-# stdlib
+##
+# Handle the actual spawning of child processes via {Process.spawn}
+# 
+# These methods are the low-level core of the library. Everything ends up here
+# to actually execute a command, but users should not need to call them
+# directly in most cases.
+##
+
+# Requirements
+# =======================================================================
+
+# Stdlib
+# -----------------------------------------------------------------------
 require 'open3'
 require 'thread'
 
-# deps
+# Deps
+# -----------------------------------------------------------------------
 require 'nrser'
-require 'nrser/refinements'
 
-# project
+# Project / Package
+# -----------------------------------------------------------------------
 require 'cmds/pipe'
 require 'cmds/io_handler'
 
+
+# Refinements
+# =======================================================================
+
+using NRSER
+
+
+# Definitions
+# =======================================================================
+
 class Cmds
+  # @!group Spawn Methods
+  
   # Low-level static method to spawn and stream inputs and/or outputs using
   # threads.
   # 
   # This is the core execution functionality of the whole library - everything
-  # end up here.
+  # ends up here.
   # 
-  # **WARNING** - This method runs the `cmd` string **AS IS** - no escaping, 
-  # formatting, interpolation, etc. are done at this point.
+  # **_WARNING - This method runs the `cmd` string AS IS - no escaping,
+  # formatting, interpolation, etc. are done at this point._**
   # 
-  # The whole rest of the library is built on top of this method to provide 
+  # The whole rest of the library is built on top of this method to provide
   # that stuff, and if you're using this library, you probably want to use that
   # stuff.
   # 
@@ -31,20 +56,15 @@ class Cmds
   # 
   # https://nickcharlton.net/posts/ruby-subprocesses-with-stdout-stderr-streams.html
   # 
-  # with major modifications from looking at Ruby's open3 module.
+  # with major modifications from looking at Ruby's [open3][] module.
+  # 
+  # [open3]: https://ruby-doc.org/stdlib/libdoc/open3/rdoc/Open3.html
   # 
   # At the end of the day ends up calling `Process.spawn`.
   # 
   # @param [String] cmd
   #   **SHELL-READY** command string. This is important - whatever you feed in
   #   here will be run **AS IS** - no escaping, formatting, etc.
-  # 
-  # @param [nil | String | #read] input
-  #   String or readable input, or `nil` (meaning no input).
-  #   
-  #   Allows {Cmds} instances can pass their `@input` instance variable.
-  #   
-  #   Don't provide input here and via `io_block`.
   # 
   # @param [Hash{(Symbol | String) => Object}] env
   #   Hash of `ENV` vars to provide for the command.
@@ -55,9 +75,22 @@ class Cmds
   #   Pretty much you want to have everything be strings or symbols for this
   #   to make any sense but we're not checking shit at the moment.
   #   
-  #   If the {Cmds#env_mode} is `:inline` it should have already prefixed 
-  #   `cmd` with the definitions and not provide this keyword (or provide 
+  #   If the {Cmds#env_mode} is `:inline` it should have already prefixed
+  #   `cmd` with the definitions and not provide this keyword (or provide
   #   `{}`).
+  # 
+  # @param [nil | String | #read] input
+  #   String or readable input, or `nil` (meaning no input).
+  #   
+  #   Allows {Cmds} instances can pass their `@input` instance variable.
+  #   
+  #   Don't provide input here and via `io_block`.
+  # 
+  # @param [Hash<Symbol, Object>] **spawn_opts
+  #   Any additional options are passed as the [options][Process.spawn options]
+  #   to {Process.spawn}
+  #   
+  #   [Process.spawn options]: http://ruby-doc.org/core/Process.html#method-c-spawn
   # 
   # @param [#call & (#arity ∈ {0, 1})] &io_block
   #   Optional block to handle io. Behavior depends on arity:
@@ -83,14 +116,19 @@ class Cmds
   def self.spawn  cmd,
                   env: {},
                   input: nil,
-                  chdir: nil,
+                  **spawn_opts,
                   &io_block
     Cmds.debug "entering Cmds#spawn",
       cmd: cmd,
       env: env,
       input: input,
-      chdir: chdir,
+      spawn_opts: spawn_opts,
       io_block: io_block
+    
+    # Process.spawn doesn't like a `nil` chdir
+    if spawn_opts.key?( :chdir ) && spawn_opts[:chdir].nil?
+      spawn_opts.delete :chdir
+    end
     
     # create the handler that will be yielded to the input block
     handler = Cmds::IOHandler.new
@@ -99,7 +137,7 @@ class Cmds
     # 
     # if a block was provided it overrides the `input` argument.
     # 
-    if io_block      
+    if io_block
       case io_block.arity
       when 0
         # when the input block takes no arguments it returns the input
@@ -137,17 +175,11 @@ class Cmds
       end # case io_block.arity
     end # if io_block
 
-    # hash of options that will be passed to `spawn`
-    spawn_opts = {}
-    
-    # add chdir if provided
-    spawn_opts[:chdir] = chdir if chdir
-
     Cmds.debug "looking at input...",
       input: input
 
     # (possibly) create the input pipe... this will be nil if the provided
-    # input is io-like. in this case it will be used directly in the 
+    # input is io-like. in this case it will be used directly in the
     # `spawn` options.
     in_pipe = case input
     when nil, String
@@ -176,7 +208,7 @@ class Cmds
     # `stream` can be told to send it's output to either:
     # 
     # 1.  a Proc that will invoked with each line.
-    # 2.  an io-like object that can be provided as `spawn`'s `:out` or 
+    # 2.  an io-like object that can be provided as `spawn`'s `:out` or
     #     `:err` options.
     # 
     # in case (1) a `Cmds::Pipe` wrapping read and write piped `IO` instances
@@ -190,8 +222,11 @@ class Cmds
       ["OUTPUT", :out],
     ].map do |name, sym|
       Cmds.debug "looking at #{ name }..."
+      
+      dest = handler.public_send sym
+      
       # see if hanlder.out or hanlder.err is a Proc
-      if handler.send(sym).is_a? Proc
+      if dest.is_a? Proc
         Cmds.debug "#{ name } is a Proc, creating pipe..."
         pipe = Cmds::Pipe.new name, sym
         # the corresponding :out or :err option for spawn needs to be
@@ -202,8 +237,8 @@ class Cmds
 
       else
         Cmds.debug "#{ name } should be io-like, setting spawn opt.",
-          output: handler.send(sym)
-        spawn_opts[sym] = handler.send(sym)
+          output: dest
+        spawn_opts[sym] = dest
         # the pipe is nil!
         nil
       end
@@ -321,7 +356,7 @@ class Cmds
   protected
   # ========================================================================
     
-    # Internal method that simply passes through to {Cmds.spawn}, serving as 
+    # Internal method that simply passes through to {Cmds.spawn}, serving as
     # a hook point for subclasses.
     # 
     # Accepts and returns the same things as {Cmds#stream}.
@@ -335,6 +370,7 @@ class Cmds
                   # include env if mode is spawn argument
                   env: (env_mode == :spawn_arg ? env : {}),
                   chdir: chdir,
+                  unsetenv_others: !!@unsetenv_others,
                   &io_block
     end # #spawn
     

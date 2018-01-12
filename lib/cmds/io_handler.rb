@@ -3,10 +3,19 @@ class Cmds
     attr_accessor :in, :out, :err
 
     def initialize
-      @queue = Queue.new
       @in = nil
       @out = $stdout
       @err = $stderr
+    end
+    
+    def out= value
+      value = value.to_s if value.is_a? Pathname
+      @out = value
+    end
+    
+    def err= value
+      value = value.to_s if value.is_a? Pathname
+      @err = value
     end
 
     def on_out &block
@@ -32,6 +41,10 @@ class Cmds
     end
 
     def start
+      # Initialize a thread-safe queue for passing output from the IO threads
+      # back to the main thread
+      @queue = Queue.new
+      
       # if out is a proc, it's not done
       out_done = ! @out.is_a?(Proc)
       # same for err

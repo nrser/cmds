@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class Cmds
   # hash of common default values used in method options.
   # 
@@ -13,51 +15,65 @@ class Cmds
   # you don't even know about may depend on said behavior.
   # 
   DEFAULTS = {
+    # Alphabetical...
+    
     # positional arguments for a command
     args: [],
-    
-    # keyword arguments for a command
-    kwds: {},
-    
-    # how to format a command string for execution
-    format: :squish,
-    
-    # what to do with array option values
-    array_mode: :join,
     
     # what to join array option values with when using `array_mode = :join`
     array_join_string: ',',
     
-    # what to do with false array values
-    false_mode: :omit,
-    
-    # Stick ENV var defs inline at beginning of command
-    env_mode: :inline,
-    
-    # No additional environment
-    env: {},
-    
-    # Don't change directories
-    chdir: nil,
+    # what to do with array option values
+    array_mode: :join,
     
     # Don't asset (raise error if exit code is not 0)
     assert: false,
     
+    # Don't change directories
+    chdir: nil,
+    
+    # No additional environment
+    env: {},
+    
+    # Stick ENV var defs inline at beginning of command
+    env_mode: :inline,
+    
+    # What to do with `false` *option* values (not `false` values as regular
+    # values or inside collections)
+    # 
+    # Just leave them out all-together
+    false_mode: :omit,
+    
+    # Flatten nested array values to a single array.
+    # 
+    # Many CLI commands accept arrays in some form or another, but I'm hard
+    # pressed to think of one that accepts nested arrays. Flattening can make
+    # it simpler to generate values.
+    # 
+    flatten_array_values: true,
+    
+    # how to format a command string for execution
+    format: :squish,
+    
+    hash_mode: :join,
+    
+    # Join hash keys and values with `:`
+    hash_join_string: ':',
+    
     # No input
     input: nil,
     
-    # What to use to separate "short" opt names (single character) from their
-    # values. I've commonly seen ' ' (`-x VALUE`) and '' (`-xVALUE`).
-    short_opt_separator: ' ',
-    
+    # keyword arguments for a command
+    kwds: {},
+
     # What to use to separate "long" opt names (more than one character) from
     # their values. I've commonly seen '=' (`--name=VALUE`)
     # and ' ' (`--name VALUE`).
     long_opt_separator: '=',
     
-    hash_mode: :join,
-    
-    hash_join_string: ':',
+    # What to use to separate "short" opt names (single character) from their
+    # values. I've commonly seen ' ' (`-x VALUE`) and '' (`-xVALUE`).
+    short_opt_separator: ' ',
     
   }.map { |k, v| [k, v.freeze] }.to_h.freeze
   

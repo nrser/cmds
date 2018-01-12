@@ -1,7 +1,16 @@
-# deps
+# Requirements
+# =======================================================================
+
+# Stdlib
+# -----------------------------------------------------------------------
+require 'pathname'
+
+# Deps
+# -----------------------------------------------------------------------
 require 'nrser'
 
-# project
+# Project / Package
+# -----------------------------------------------------------------------
 require 'cmds/version'
 require 'cmds/debug'
 require 'cmds/util'
@@ -13,7 +22,25 @@ require 'cmds/sugar'
 require 'cmds/stream'
 require 'cmds/capture'
 
+
+# Definitions
+# =======================================================================
+
 class Cmds
+  
+  # Constants
+  # ============================================================================
+  
+  # Absolute, expanded path to the gem's root directory.
+  # 
+  # @return [Pathname]
+  # 
+  ROOT = ( Pathname.new(__FILE__).dirname / '..' ).expand_path
+  
+  
+  # Attributes
+  # ============================================================================
+  
   # ERB stirng template (with Cmds-specific extensions) for the command.
   # 
   # @return [String]
@@ -26,9 +53,9 @@ class Cmds
   # 
   # defaults to `[]`.
   # 
-  # {#prepare} and the methods that invoke it (like {#capture}, 
+  # {#prepare} and the methods that invoke it (like {#capture},
   # {#stream}, etc.) accept `*args`, which will be appended to
-  # these values to create the final array for rendering.   
+  # these values to create the final array for rendering.
   # 
   # @return [Array<Object>]
   # 
@@ -39,7 +66,7 @@ class Cmds
   # 
   # defaults to `{}`.
   # 
-  # {#prepare} and the methods that invoke it (like {#capture}, 
+  # {#prepare} and the methods that invoke it (like {#capture},
   # {#stream}, etc.) accept `**kwds`, which will be merged on top of
   # these values to create the final hash for rendering.
   # 
@@ -51,7 +78,7 @@ class Cmds
   # string or readable IO-like object to use as default input to the
   # command.
   # 
-  # {#prepare} and the methods that invoke it (like {#capture}, 
+  # {#prepare} and the methods that invoke it (like {#capture},
   # {#stream}, etc.) accept an optional block that will override this
   # value if present.
   # 
@@ -113,7 +140,6 @@ class Cmds
   attr_reader :chdir
   
   
-  
   # The results of the last time {Cmds#prepare} was called on the instance.
   # 
   # A little bit funky, I know, but it turns out to be quite useful.
@@ -126,15 +152,17 @@ class Cmds
   # 
   attr_reader :last_prepared_cmd
   
-
-
+  
+  # Constructor
+  # ============================================================================
+  
   # Construct a `Cmds` instance.
   # 
   # @param [String] template
-  #   String template to use when creating the command string to send to the 
+  #   String template to use when creating the command string to send to the
   #   shell via {#prepare}.
   #   
-  #   Allows ERB (positional and keyword), `%s` (positional) and `%{name}` 
+  #   Allows ERB (positional and keyword), `%s` (positional) and `%{name}`
   #   (keyword) placeholders.
   #   
   #   Available as the {#template} attribute.
@@ -145,10 +173,10 @@ class Cmds
   #   Available as the {#args} attribute.
   # 
   # @param [Boolean] assert:
-  #   When `true`, execution will raise an error if the command doesn't exit 
+  #   When `true`, execution will raise an error if the command doesn't exit
   #   successfully (if the command exits with any status other than `0`).
   #   
-  #   Available as the {#assert} attribute. 
+  #   Available as the {#assert} attribute.
   # 
   # @param [nil | String | Pathname] chdir:
   #   Optional directory to change into when executing.
@@ -167,8 +195,8 @@ class Cmds
   #       if you want do print the command out and paste it into a terminal.
   #       This is the default.
   #   
-  #   -   `:spawn_arg` passes them as an argument to `Process.spawn`. In this 
-  #       case they will not be included in the output of {#prepare} 
+  #   -   `:spawn_arg` passes them as an argument to `Process.spawn`. In this
+  #       case they will not be included in the output of {#prepare}
   #       (or {#render}).
   #   
   #   Available as the {#env_mode} attribute.
@@ -182,11 +210,11 @@ class Cmds
   #   
   #   -   `nil` performs **no formatting at all*.
   #       
-  #   -   `:squish` reduces any consecutive whitespace (including newlines) to 
+  #   -   `:squish` reduces any consecutive whitespace (including newlines) to
   #       a single space. This is the default.
   #   
-  #   -   `:pretty` tries to keep the general formatting but make it acceptable 
-  #       to the shell by adding `\` at the end of lines. See 
+  #   -   `:pretty` tries to keep the general formatting but make it acceptable
+  #       to the shell by adding `\` at the end of lines. See
   #       {Cmds.pretty_format}.
   #       
   #   -   An object that responds to `#call` will be called with the command
@@ -226,7 +254,14 @@ class Cmds
     # {#prepare} has never been called. Kinda funky but ends up being useful.
     @last_prepared_cmd = nil
   end # #initialize
-
+  
+  
+  # Instance Methods
+  # ============================================================================
+  # 
+  # That ended up here. There are many more topically organized in
+  # `//lib/cmds/*.rb` files.
+  # 
 
   # returns a new {Cmds} with the parameters and input merged in
   def curry *args, **kwds, &input_block

@@ -7,18 +7,12 @@ require 'shellwords'
 require 'nrser'
 
 # package
+require 'cmds/util/shell_escape'
 require 'cmds/util/tokenize_options'
 
 class Cmds
   # class methods
   # =============
-
-  # shortcut for Shellwords.escape
-  # 
-  # also makes it easier to change or customize or whatever
-  def self.esc str
-    Shellwords.escape str
-  end  
 
   # tokenize values for the shell. each values is tokenized individually
   # and the results are joined with a space.
@@ -32,15 +26,12 @@ class Cmds
   def self.tokenize *values, **opts
     values.map {|value|
       case value
-      when nil
-        # nil is just an empty string, NOT an empty string bash token
-        ''
       when Hash
         tokenize_options value, **opts
       else
-        esc value.to_s
+        tokenize_value value, **opts
       end
-    }.join ' '
+    }.flatten.join ' '
   end # .tokenize
   
   
