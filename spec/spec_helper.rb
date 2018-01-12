@@ -5,6 +5,8 @@ require 'tempfile'
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'cmds'
 
+require 'nrser/rspex'
+
 ECHO_CMD = "./test/echo_cmd.rb"
 
 def echo_cmd_data result
