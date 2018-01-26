@@ -445,19 +445,23 @@ It's a clumsy hack from when I was first writing this library, and I've pretty m
 
 It pretty much just replaces some special patterns with their ERB-equivalent via the {Cmds.replace_shortcuts} method before moving on to ERB processing:
 
-1.  `%s`        => `<%= arg %>`
-2.  `%{key}`    => `<%= key %>`
-3.  `%{key?}`   => `<%= key? %>`
-4.  `%<key>s`   => `<%= key %>`
-5.  `%<key?>s`  => `<%= key? %>`
+| Format      | ERB Replacement |
+| ----------- | --------------- |
+| `%s`        |  `<%= arg %>`   |
+| `%{key}`    |  `<%= key %>`   |
+| `%{key?}`   |  `<%= key? %>`  |
+| `%<key>s`   |  `<%= key %>`   |
+| `%<key?>s`  |  `<%= key? %>`  |
 
 And the escaping versions, where you can put anothe `%` in front to get the literal intead of the subsitution:
 
-1.  `%%s`       => `%s`
-2.  `%%{key}`   => `%{key}`
-3.  `%%{key?}`  => `%{key?}`
-4.  `%%<key>s`  => `%<key>s`
-5.  `%%<key?>s` => `%<key?>s`
+| Format      | ERB Replacement |
+| ----------- | --------------- |
+| `%%s`       | `%s`            |
+| `%%{key}`   | `%{key}`        |
+| `%%{key?}`  | `%{key?}`       |
+| `%%<key>s`  | `%<key>s`       |
+| `%%<key?>s` | `%<key?>s`      |
 
 That's it. No `printf` formatting beyond besides `s` (string).
 
