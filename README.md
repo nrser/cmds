@@ -36,7 +36,7 @@ Or, "what's it look like?"...
 
 -   Instead of
     
-    ```Ruby
+    ```ruby
     `psql \
       --username=#{ (db_config['username'] || ENV['USER']).shellescape } \
       #{ db_config['database'].shellescape } \
@@ -45,7 +45,7 @@ Or, "what's it look like?"...
     
     write
     
-    ```Ruby
+    ```ruby
     Cmds 'psql %{opts} %{db} < %{dump}',
       db: db_config['database'],
       dump: filepath,
@@ -65,7 +65,7 @@ Or, "what's it look like?"...
     
 -   Instead of
     
-    ```Ruby
+    ```ruby
     `PGPASSWORD=#{ config[:password].shellescape } \
       pg_dump \
         --username=#{ config[:username].shellescape } \
@@ -77,7 +77,7 @@ Or, "what's it look like?"...
     
     which can be really hard to pick out what's going on from a quick glance, write
     
-    ```Ruby
+    ```ruby
     Cmds.new(
       'pg_dump %{opts} %{database}',
       kwds: {
@@ -98,7 +98,7 @@ Or, "what's it look like?"...
     
     Again, with some additional comments and examples:
     
-    ```Ruby
+    ```ruby
     # We're going to instantiate a new {Cmds} object this time, because we're
     # not just providing values for the string template, we're specifying an
     # environment variable for the child process too.
@@ -182,7 +182,7 @@ Templates are processed with "[Embedded Ruby][]" (eRuby/ERB) using the [Erubis][
 For how it works check out
 
 1.  {Cmds::ERBContext}
-2.  {Cmds::ShellERuby}
+2.  {Cmds::ShellEruby}
 3.  {Cmds#render}
 
 ******************************************************************************
