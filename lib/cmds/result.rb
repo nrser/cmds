@@ -1,7 +1,7 @@
 require 'nrser/refinements'
 
 class Cmds
-  # a simple data structure returned from calling {Cmds#capture} 
+  # a simple data structure returned from calling {Cmds#capture}
   # on a {Cmds} instance.
   # 
   # it contains the exit status code, standard output and standard error,
@@ -45,7 +45,7 @@ class Cmds
       ! ok?
     end
     
-    # raises an error if the command failed (exited with a {#status} other 
+    # raises an error if the command failed (exited with a {#status} other
     # than `0`).
     #
     # @return [Result] it's self (so that it can be chained).
@@ -56,5 +56,22 @@ class Cmds
       Cmds.check_status @cmd, @status, @err
       self
     end # raise_error
+    
+    
+    # Get a {Hash} containing the instance variable values for easy logging,
+    # JSON dumping, etc.
+    # 
+    # @example
+    #   Cmds( "echo %s", "hey" ).to_h
+    #   # => {:cmd=>"echo hey", :status=>0, :out=>"hey\n", :err=>""}
+    # 
+    # @return [Hash<Symbol, V>]
+    # 
+    def to_h
+      instance_variables.map { |name|
+        [name.to_s.sub('@', '').to_sym, instance_variable_get( name )]
+      }.to_h
+    end
+    
   end # Result
 end # Cmds
