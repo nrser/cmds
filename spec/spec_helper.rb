@@ -7,6 +7,17 @@ require 'cmds'
 
 require 'nrser/rspex'
 
+
+# RSpec Configuration
+# ============================================================================
+
+RSpec.configure do |config|
+  # Enable flags like --only-failures and --next-failure
+  config.example_status_persistence_file_path = \
+    Cmds::ROOT / 'tmp' / ".rspec_status"
+end
+
+
 ECHO_CMD = "./test/echo_cmd.rb"
 
 def echo_cmd_data result
