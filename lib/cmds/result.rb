@@ -1,28 +1,43 @@
 require 'nrser/refinements'
 
 class Cmds
-  # a simple data structure returned from calling {Cmds#capture}
+  # A simple data structure returned from calling {Cmds#capture}
   # on a {Cmds} instance.
   # 
-  # it contains the exit status code, standard output and standard error,
+  # It contains the exit status code, standard output and standard error,
   # as well as the actual string command issued (after all substitutions).
   #
-  # instances also have a few convenience methods.
-  #
-  # @!attribute [r] cmd
-  #   @return [String] the command string that was executed.
-  #
-  # @!attribute [r] status
-  #   @return [Fixnum] the command process' exit status code.
-  #
-  # @!attribute [r] out
-  #   @return [String] the command process' standard output.
-  #
-  # @!attribute [r] err
-  #   @return [String] the command process' standard error.
-  #
+  # Instances also have a few convenience methods.
+  # 
   class Result
-    attr_reader :cmd, :status, :out, :err
+    
+    # The command string that was executed.
+    # 
+    # @return [String]
+    #     
+    attr_reader :cmd
+    
+    
+    # The command process' exit status code.
+    # 
+    # @return [Fixnum]
+    #     
+    attr_reader :status
+    
+    
+    # The command process' standard output.
+    # 
+    # @return [String]
+    #     
+    attr_reader :out
+    
+    
+    # The command process' standard error.
+    # 
+    # @return [String]
+    #     
+    attr_reader :err
+    
     
     # @param cmd [String] {#cmd} attribute.
     # @param status [Fixnum] {#status} attribute.
@@ -35,17 +50,22 @@ class Cmds
       @err = err
     end
     
-    # @return [Boolean] true if {#status} is `0`.
+    
+    # @return [Boolean]
+    #   `true` if {#status} is `0`.
     def ok?
       @status == 0
     end
     
-    # @return [Boolean] true if {#status} is not `0`.
+    
+    # @return [Boolean]
+    #   `true` if {#status} is not `0`.
     def error?
       ! ok?
     end
     
-    # raises an error if the command failed (exited with a {#status} other
+    
+    # Raises an error if the command failed (exited with a {#status} other
     # than `0`).
     #
     # @return [Result] it's self (so that it can be chained).
