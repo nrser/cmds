@@ -135,6 +135,9 @@ class Cmds
         msg += " and stderr:\n\n" + err
       end
       
+      # Remove NULL bytes (not sure how they get in there...)
+      msg = msg.delete("\000")
+      
       raise SystemCallError.new msg, status
     end
   end # .assert
