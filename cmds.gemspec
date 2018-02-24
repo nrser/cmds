@@ -28,7 +28,7 @@ Gem::Specification.new do |spec|
   # ----------------------------------------------------------------------------
   
   # Mu guns
-  spec.add_dependency             "nrser",          '~> 0.1', ">= 0.1.1"
+  spec.add_dependency             "nrser",          ">= 0.2.0.pre.1"
   
   # ERB replacement with more features
   # 
