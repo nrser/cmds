@@ -11,13 +11,30 @@ describe Cmds::ERBContext do
     BLOCK
   }
 
-  def get_result tpl, bnd
-    NRSER.squish ERB.new(tpl).result(bnd.get_binding)
+  def get_result tpl, context
+    # NOTE  This *used* to use {ERB.new}, but that stopped working in Ruby
+    #       2.4+ with a weird
+    #       
+    #           uninitialized constant Cmds::ERBContext::String
+    #       
+    #       message... https://travis-ci.org/nrser/cmds/jobs/347910522
+    #       
+    #       This doesn't matter, because we use {ERubis}, and that still works,
+    #       so switched to that here...
+    #       
+    NRSER.squish Cmds::ShellEruby.new( tpl ).result( context.get_binding )
   end
 
   it "should work" do
-    bnd = Cmds::ERBContext.new [], current_host: 'xyz', domain: 'com.nrser.blah', filepath: '/tmp/export.plist'
+    context = Cmds::ERBContext.new(
+      [],
+      current_host: 'xyz',
+      domain: 'com.nrser.blah',
+      filepath: '/tmp/export.plist',
+    )
 
-    expect(get_result tpl, bnd).to eq "defaults -currentHost xyz export com.nrser.blah /tmp/export.plist"
+    expect(
+      get_result tpl, context
+    ).to eq "defaults -currentHost xyz export com.nrser.blah /tmp/export.plist"
   end
 end
