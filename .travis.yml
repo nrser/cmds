@@ -1,0 +1,18 @@
+before_install:
+  # Install gem
+  - gem update --system
+  - gem install bundler
+  
+language: ruby
+
+rvm:
+  - 2.3.0
+  - 2.3.6
+  - 2.4.3
+  - 2.5.0
+
+script: bundle exec rspec
+
+sudo: false
+
+cache: bundler
