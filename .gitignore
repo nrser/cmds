@@ -17,6 +17,9 @@ test/version_tmp
 tmp
 
 ref/repos
+
+.ruby-version
+
 ##############################################################################
 # BEGIN Qb.gitingore
 #
