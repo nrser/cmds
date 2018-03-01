@@ -41,7 +41,7 @@ describe 'Cmds#stream' do
         end
       end
 
-      expect(out).to match /^\s+3\n$/
+      expect(out).to match /^\s*3\n$/
       expect(err).to eq ''
     end
 
@@ -52,7 +52,7 @@ describe 'Cmds#stream' do
         end
       end
 
-      expect(out).to match /^\s+3\n$/
+      expect(out).to match /^\s*3\n$/
     end
   end # input
   
