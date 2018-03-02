@@ -221,8 +221,10 @@ describe "Cmds.prepare" do
     context "specify :repeat behavior" do
       it "outputs repeated options" do
         expect(
-          Cmds.prepare 'blah <%= opts %>',
-            opts: { list: ['a', 'b', 'see'] } {
+          Cmds.prepare(
+            'blah <%= opts %>',
+            opts: { list: ['a', 'b', 'see'] }
+          ) {
             { array_mode: :repeat }
           }
         ).to eq 'blah --list=a --list=b --list=see'
@@ -232,15 +234,21 @@ describe "Cmds.prepare" do
     context "specify :json behavior" do
       it "outputs JSON-encoded options" do
         expect(
-          Cmds.prepare 'blah <%= opts %>',
-            opts: { list: ['a', 'b', 'see'] } {{ array_mode: :json }}
+          Cmds.prepare(
+            'blah <%= opts %>',
+            opts: { list: ['a', 'b', 'see'] }
+          ) {
+            { array_mode: :json }
+          }
         ).to eq %{blah --list='["a","b","see"]'}
       end
       
       it "handles single quotes in the string" do
         expect(
-          Cmds.prepare 'blah <%= opts %>',
-            opts: { list: ["you're the best"] } {{ array_mode: :json }}
+          Cmds.prepare(
+            'blah <%= opts %>',
+            opts: { list: ["you're the best"] }
+          ) {{ array_mode: :json }}
         ).to eq %{blah --list='["you'"'"'re the best"]'}
         
         
