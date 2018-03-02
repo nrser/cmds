@@ -16,6 +16,6 @@ class Cmds
   # 
   # @return [String]
   # 
-  VERSION = '0.2.9.dev'
+  VERSION = '0.2.9'
   
 end
