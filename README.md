@@ -1,6 +1,12 @@
 Cmds
 =============================================================================
 
+[![Gem Version](http://img.shields.io/gem/v/cmds.svg)][gem]
+[![Build Status](http://img.shields.io/travis/nrser/cmds.svg)][travis]
+
+[gem]: https://rubygems.org/gems/cmds
+[travis]: http://travis-ci.org/nrser/cmds
+
 `Cmds` tries to make it easier to read, write and remember using shell commands in Ruby.
 
 It treats generating shell the in a similar fashion to generating SQL or HTML.
