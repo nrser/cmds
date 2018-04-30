@@ -23,10 +23,18 @@ require 'cmds/stream'
 require 'cmds/capture'
 
 
+
+
 # Definitions
 # =======================================================================
 
 class Cmds
+  
+  # Mixins
+  # ========================================================================
+  
+  include NRSER::Log::Mixin
+  
   
   # Attributes
   # ============================================================================
@@ -229,7 +237,7 @@ class Cmds
   def initialize  template, **opts
     opts = defaults opts
     
-    Cmds.debug "Cmd constructing...",
+    logger.trace "Cmd constructing...",
       template: template,
       opts: opts
 

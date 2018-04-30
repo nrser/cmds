@@ -4,7 +4,7 @@ class Cmds
   # outputs.
   # 
   # @param [Array<Object>] *args
-  #   positional parameters to append to those in `@args` for rendering 
+  #   positional parameters to append to those in `@args` for rendering
   #   into the command string.
   # 
   # @param [Hash{Symbol => Object}] **kwds
@@ -19,7 +19,7 @@ class Cmds
   #   result of execution with command string, status, stdout and stderr.
   # 
   def capture *args, **kwds, &input_block
-    Cmds.debug "entering Cmds#capture",
+    logger.trace "entering Cmds#capture",
       args: args,
       kwds: kwds,
       input: input
@@ -28,14 +28,14 @@ class Cmds
     # otherwise default to instance variable (which may be `nil`)
     input = input_block.nil? ? input : input_block.call
     
-    Cmds.debug "configured input",
+    logger.trace "configured input",
       input: input
     
     # strings output will be concatenated onto
     out = ''
     err = ''
 
-    Cmds.debug "calling Cmds.spawn..."
+    logger.trace "calling Cmds.spawn..."
     
     status = spawn(*args, **kwds) do |io|
       # send the input to stream, which sends it to spawn
@@ -51,7 +51,7 @@ class Cmds
       end
     end
     
-    Cmds.debug "Cmds.spawn completed",
+    logger.trace "Cmds.spawn completed",
       status: status
 
     # build a Result

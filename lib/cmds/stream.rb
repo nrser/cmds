@@ -11,7 +11,7 @@ class Cmds
   #   command exit status.
   # 
   def stream *args, **kwds, &io_block
-    Cmds.debug "entering Cmds#stream",
+    logger.trace "entering Cmds#stream",
       args: args,
       kwds: kwds,
       io_block: io_block

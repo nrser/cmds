@@ -118,7 +118,7 @@ class Cmds
                   input: nil,
                   **spawn_opts,
                   &io_block
-    Cmds.debug "entering Cmds#spawn",
+    logger.trace "entering Cmds#spawn",
       cmd: cmd,
       env: env,
       input: input,
@@ -175,7 +175,7 @@ class Cmds
       end # case io_block.arity
     end # if io_block
 
-    Cmds.debug "looking at input...",
+    logger.trace "looking at input...",
       input: input
 
     # (possibly) create the input pipe... this will be nil if the provided
@@ -183,7 +183,7 @@ class Cmds
     # `spawn` options.
     in_pipe = case input
     when nil, String
-      Cmds.debug "input is a String or nil, creating pipe..."
+      logger.trace "input is a String or nil, creating pipe..."
 
       in_pipe = Cmds::Pipe.new "INPUT", :in
       spawn_opts[:in] = in_pipe.r
@@ -193,10 +193,10 @@ class Cmds
       in_pipe
 
     else
-      Cmds.debug "input should be io-like, setting spawn opt.",
+      logger.trace "input should be io-like, setting spawn opt.",
         input: input
       if input == $stdin
-        Cmds.debug "input is $stdin."
+        logger.trace "input is $stdin."
       end
       spawn_opts[:in] = input
       nil
@@ -221,13 +221,13 @@ class Cmds
       ["ERROR", :err],
       ["OUTPUT", :out],
     ].map do |name, sym|
-      Cmds.debug "looking at #{ name }..."
+      logger.trace "looking at #{ name }..."
       
       dest = handler.public_send sym
       
       # see if hanlder.out or hanlder.err is a Proc
       if dest.is_a? Proc
-        Cmds.debug "#{ name } is a Proc, creating pipe..."
+        logger.trace "#{ name } is a Proc, creating pipe..."
         pipe = Cmds::Pipe.new name, sym
         # the corresponding :out or :err option for spawn needs to be
         # the pipe's write handle
@@ -236,7 +236,7 @@ class Cmds
         pipe
 
       else
-        Cmds.debug "#{ name } should be io-like, setting spawn opt.",
+        logger.trace "#{ name } should be io-like, setting spawn opt.",
           output: dest
         spawn_opts[sym] = dest
         # the pipe is nil!
@@ -244,7 +244,7 @@ class Cmds
       end
     end # map outputs
 
-    Cmds.debug "spawning...",
+    logger.trace "spawning...",
       env: env,
       cmd: cmd,
       opts: spawn_opts
@@ -253,13 +253,13 @@ class Cmds
                         cmd,
                         spawn_opts
 
-    Cmds.debug "spawned.",
+    logger.trace "spawned.",
       pid: pid
 
     wait_thread = Process.detach pid
     wait_thread[:name] = "WAIT"
 
-    Cmds.debug "wait thread created.",
+    logger.trace "wait thread created.",
       thread: wait_thread
 
     # close child ios if created
@@ -274,14 +274,14 @@ class Cmds
     in_thread = if in_pipe
       Thread.new do
         Thread.current[:name] = in_pipe.name
-        Cmds.debug "thread started, writing input..."
+        logger.trace "thread started, writing input..."
 
         in_pipe.w.write input unless input.nil?
 
-        Cmds.debug "write done, closing in_pipe.w..."
+        logger.trace "write done, closing in_pipe.w..."
         in_pipe.w.close
 
-        Cmds.debug "thread done."
+        logger.trace "thread done."
       end # Thread
     end
 
@@ -289,15 +289,15 @@ class Cmds
       if pipe
         Thread.new do
           Thread.current[:name] = pipe.name
-          Cmds.debug "thread started"
+          logger.trace "thread started"
 
           loop do
-            Cmds.debug "blocking on gets..."
+            logger.trace "blocking on gets..."
             line = pipe.r.gets
             if line.nil?
-              Cmds.debug "received nil, output done."
+              logger.trace "received nil, output done."
             else
-              Cmds.debug NRSER.squish <<-BLOCK
+              logger.trace NRSER.squish <<-BLOCK
                 received #{ line.bytesize } bytes, passing to handler.
               BLOCK
             end
@@ -305,38 +305,38 @@ class Cmds
             break if line.nil?
           end
 
-          Cmds.debug "reading done, closing pipe.r (unless already closed)..."
+          logger.trace "reading done, closing pipe.r (unless already closed)..."
           pipe.r.close unless pipe.r.closed?
 
-          Cmds.debug "thread done."
+          logger.trace "thread done."
         end # thread
       end # if pipe
     end # map threads
 
-    Cmds.debug "handing off main thread control to the handler..."
+    logger.trace "handing off main thread control to the handler..."
     begin
       handler.start
 
-      Cmds.debug "handler done."
+      logger.trace "handler done."
 
     ensure
       # wait for the threads to complete
-      Cmds.debug "joining threads..."
+      logger.trace "joining threads..."
 
       [in_thread, out_thread, err_thread, wait_thread].each do |thread|
         if thread
-          Cmds.debug "joining #{ thread[:name] } thread..."
+          logger.trace "joining #{ thread[:name] } thread..."
           thread.join
         end
       end
 
-      Cmds.debug "all threads done."
+      logger.trace "all threads done."
     end
 
     status = wait_thread.value.exitstatus
-    Cmds.debug "exit status: #{ status.inspect }"
+    logger.trace "exit status: #{ status.inspect }"
 
-    Cmds.debug "checking @assert and exit status..."
+    logger.trace "checking @assert and exit status..."
     if @assert && status != 0
       # we don't necessarily have the err output, so we can't include it
       # in the error message
@@ -347,7 +347,7 @@ class Cmds
       raise SystemCallError.new msg, status
     end
 
-    Cmds.debug "streaming completed."
+    logger.trace "streaming completed."
 
     return status
   end # .spawn
