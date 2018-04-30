@@ -52,6 +52,8 @@ class Cmds
       END
     end
     
+    name = name.gsub( '_', '-' ) if opts[:dash_opt_names]
+    
     # Set type (`:short` or `:long`) prefix and name/value separator depending
     # on if name is "short" (single character) or "long" (anything else)
     # 

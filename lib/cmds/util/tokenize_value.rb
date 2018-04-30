@@ -16,6 +16,7 @@ class Cmds
   TOKENIZE_OPT_KEYS = [
     :array_mode,
     :array_join_string,
+    :dash_opt_names,
     :false_mode,
     :flatten_array_values,
     :hash_mode,

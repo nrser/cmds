@@ -1,4 +1,7 @@
+# encoding: UTF-8
 # frozen_string_literal: true
+
+require 'active_support/core_ext/object/deep_dup'
 
 class Cmds
   # hash of common default values used in method options.
@@ -31,6 +34,11 @@ class Cmds
     
     # Don't change directories
     chdir: nil,
+    
+    # Commands often use dash-separated option names, but it's a lot more
+    # convenient in Ruby to use underscored when using {Symbol}. This option
+    # will convert the underscores to dashes.
+    dash_opt_names: false,
     
     # No additional environment
     env: {},
@@ -97,7 +105,7 @@ class Cmds
   #   
   def self.defaults opts, keys = '*', extras = {}
     if keys == '*'
-      DEFAULTS.dup
+      DEFAULTS.deep_dup
     else
       keys.
         map {|key|
