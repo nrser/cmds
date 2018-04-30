@@ -1,4 +1,3 @@
-require 'nrser/refinements'
 
 class Cmds
   # A simple data structure returned from calling {Cmds#capture}
