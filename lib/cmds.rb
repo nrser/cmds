@@ -234,17 +234,21 @@ class Cmds
   #   
   #   Available as the {#kwds} attribute.
   # 
-  def initialize  template, **opts
-    opts = defaults opts
+  def initialize  template, **options
+    options = defaults options
+    
+    if options.key? :opts
+      options[:kwds][:opts] = options.delete :opts
+    end
     
     logger.trace "Cmd constructing...",
       template: template,
-      opts: opts
+      options: options
 
     @template = template
     
     # Assign options to instance variables
-    opts.each { |key, value|
+    options.each { |key, value|
       instance_variable_set "@#{ key }", value
     }
     
