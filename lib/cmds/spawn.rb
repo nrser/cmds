@@ -297,15 +297,15 @@ class Cmds
             if line.nil?
               logger.trace "received nil, output done."
             else
-              logger.trace NRSER.squish <<-BLOCK
-                received #{ line.bytesize } bytes, passing to handler.
-              BLOCK
+              logger.trace \
+                "received #{ line.bytesize } bytes, passing to handler."
             end
             handler.thread_send_line pipe.sym, line
             break if line.nil?
           end
 
-          logger.trace "reading done, closing pipe.r (unless already closed)..."
+          logger.trace \
+            "reading done, closing pipe.r (unless already closed)..."
           pipe.r.close unless pipe.r.closed?
 
           logger.trace "thread done."
