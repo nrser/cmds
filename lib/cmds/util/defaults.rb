@@ -86,6 +86,11 @@ class Cmds
   }.map { |k, v| [k, v.freeze] }.to_h.freeze
   
   
+  def self.all_defaults
+    DEFAULTS
+  end
+  
+  
   # merge an method call options hash with common defaults for the module.
   # 
   # this makes it easy to use the same defaults in many different methods
@@ -105,11 +110,11 @@ class Cmds
   #   
   def self.defaults opts, keys = '*', extras = {}
     if keys == '*'
-      DEFAULTS.deep_dup
+      all_defaults.deep_dup
     else
       keys.
         map {|key|
-          [key, DEFAULTS.fetch(key)]
+          [key, all_defaults.fetch(key)]
         }.
         to_h
     end.
