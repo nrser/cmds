@@ -1,51 +1,49 @@
 require 'spec_helper'
 
-describe "Cmds::capture" do
-  it "captures stdout" do
+describe 'Cmds::capture' do
+  it 'captures stdout' do
     expect(
-      Cmds.new(%{ruby -e '$stdout.puts "hey"'}).capture.out
+      Cmds.new(%(ruby -e '$stdout.puts "hey"')).capture.out
     ).to eq "hey\n"
   end
 
-  it "captures stderr" do
+  it 'captures stderr' do
     expect(
-      Cmds.new(%{ruby -e '$stderr.puts "ho"'}).capture.err
+      Cmds.new(%(ruby -e '$stderr.puts "ho"')).capture.err
     ).to eq "ho\n"
   end
 
   context "echo_cmd.rb 'hello world!'" do
-
-    shared_examples "executes correctly" do
-      it_behaves_like "ok"
+    shared_examples 'executes correctly' do
+      it_behaves_like 'ok'
 
       it "should have 'hello world!' as ARGV[0]" do
-        expect( JSON.load(result.out)['ARGV'][0] ).to eq "hello world!"
+        expect(JSON.load(result.out)['ARGV'][0]).to eq 'hello world!'
       end
     end # executes correctly
 
-    context "positional args" do
-      let(:result) {
-        Cmds "./test/echo_cmd.rb <%= arg %>", "hello world!"
-      }
+    context 'positional args' do
+      let(:result) do
+        Cmds './test/echo_cmd.rb <%= arg %>', 'hello world!'
+      end
 
-      it_behaves_like "executes correctly"
+      it_behaves_like 'executes correctly'
     end
 
-    context "keyword args" do
-      let(:result) {
-        Cmds "./test/echo_cmd.rb <%= s %>", s: "hello world!"
-      }
+    context 'keyword args' do
+      let(:result) do
+        Cmds './test/echo_cmd.rb <%= s %>', s: 'hello world!'
+      end
 
-      it_behaves_like "executes correctly"
+      it_behaves_like 'executes correctly'
     end
-
   end # context echo_cmd.rb 'hello world!'
 
-  it "is reusable" do
-    args_cmd = Cmds.new "./test/echo_cmd.rb <%= arg %>"
-    kwds_cmd = Cmds.new "./test/echo_cmd.rb <%= s %>"
+  it 'is reusable' do
+    args_cmd = Cmds.new './test/echo_cmd.rb <%= arg %>'
+    kwds_cmd = Cmds.new './test/echo_cmd.rb <%= s %>'
 
-    args = ["arg one", "arg two", "arg three"]
+    args = ['arg one', 'arg two', 'arg three']
 
     args.each do |arg|
       results = [
@@ -54,38 +52,38 @@ describe "Cmds::capture" do
       ]
 
       results.each do |result|
-        expect( echo_cmd_argv result ).to eq [arg]
+        expect(echo_cmd_argv(result)).to eq [arg]
       end
     end
   end # is reusable
 
-  context "input" do
-    let(:input) {
-      <<-BLOCK
+  context 'input' do
+    let(:input) do
+      <<~BLOCK
         one
         two
         three
         four!
       BLOCK
-    }
+    end
 
-    it "accepts input via options" do
+    it 'accepts input via options' do
       cmd = Cmds.new(ECHO_CMD, input: input)
-      expect( echo_cmd_stdin cmd.capture ).to eq input
+      expect(echo_cmd_stdin(cmd.capture)).to eq input
     end
 
-    it "accepts input via block" do
+    it 'accepts input via block' do
       cmd = Cmds.new ECHO_CMD
-      expect( echo_cmd_stdin cmd.capture { input } ).to eq input
+      expect(echo_cmd_stdin(cmd.capture { input })).to eq input
     end
 
-    it "accepts input from a stream" do
-      File.open "./test/lines.txt" do |f|
+    it 'accepts input from a stream' do
+      File.open './test/lines.txt' do |f|
         input = f.read
         f.rewind
 
         cmd = Cmds.new ECHO_CMD
-        expect( echo_cmd_stdin cmd.capture { f } ).to eq input
+        expect(echo_cmd_stdin(cmd.capture { f })).to eq input
       end
     end
   end # context input

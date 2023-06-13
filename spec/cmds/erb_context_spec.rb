@@ -2,7 +2,7 @@ require 'spec_helper'
 
 describe Cmds::ERBContext do
   let(:tpl) do
-    <<-BLOCK
+    <<~BLOCK
       defaults
       <% if current_host? %>
         -currentHost <%= current_host %>

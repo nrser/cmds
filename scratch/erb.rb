@@ -37,7 +37,7 @@ class ERBContext
   end
 end
 
-tpl = <<-BLOCK
+tpl = <<~BLOCK
   defaults write <%= domain %> <%= key %> -dict
   <% values.each do |key, value| %>
     <%= key %> <%= value %>

@@ -155,10 +155,7 @@ class Cmds
 
       else
         # bad block provided
-        raise ArgumentError, Text.squish(<<-BLOCK
-          provided input block must have arity 0 or 1
-        BLOCK
-                                        )
+        raise ArgumentError, 'provided input block must have arity 0 or 1'
       end # case io_block.arity
     end # if io_block
 
@@ -325,9 +322,7 @@ class Cmds
     if @assert && status != 0
       # we don't necessarily have the err output, so we can't include it
       # in the error message
-      msg = Text.squish <<-BLOCK
-        streamed command `#{cmd}` exited with status #{status}
-      BLOCK
+      msg = Text.squish "streamed command `#{cmd}` exited with status #{status}"
 
       raise SystemCallError.new msg, status
     end

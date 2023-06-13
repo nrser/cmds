@@ -20,30 +20,26 @@ class Cmds
           args = subs[0]
 
         else
-          raise TypeError, Text.squish <<-BLOCK
-            first *subs arg must be Array or Hash, not #{subs[0].inspect}
-          BLOCK
+          raise TypeError,
+                "first *subs arg must be Array or Hash, not #{subs[0].inspect}"
         end
 
       when 2
         # first arg needs to be an array, second a hash
         unless subs[0].is_a? Array
-          raise TypeError, Text.squish <<-BLOCK
-            first *subs arg needs to be an array, not #{subs[0].inspect}
-          BLOCK
+          raise TypeError,
+                "first *subs arg needs to be an array, not #{subs[0].inspect}"
         end
 
         unless subs[1].is_a? Hash
-          raise TypeError, Text.squish <<-BLOCK
-            second *subs arg needs to be a Hash, not #{subs[1].inspect}
-          BLOCK
+          raise TypeError,
+                "second *subs arg needs to be a Hash, not #{subs[1].inspect}"
         end
 
         args, kwds = subs
       else
-        raise ArgumentError, Text.squish <<-BLOCK
-          must provide one or two *subs arguments, received #{1 + subs.length}
-        BLOCK
+        raise ArgumentError,
+              "must provide one or two *subs arguments, received #{1 + subs.length}"
       end
 
       {

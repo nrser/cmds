@@ -73,7 +73,7 @@ describe 'Cmds.prepare' do
 
   context 'if statement' do
     let(:tpl) do
-      <<-BLOCK
+      <<~BLOCK
         defaults
         <% if current_host? %>
           -currentHost <%= current_host %>
@@ -100,7 +100,7 @@ describe 'Cmds.prepare' do
 
   context 'each statement' do
     let(:tpl) do
-      <<-BLOCK
+      <<~BLOCK
         defaults write <%= domain %> <%= key %> -dict
         <% values.each do |key, value| %>
           <%= key %> <%= value %>
@@ -119,7 +119,7 @@ describe 'Cmds.prepare' do
 
   context 'optional subs' do
     let(:tpl) do
-      <<-BLOCK
+      <<~BLOCK
         blah <%= x? %> <%= y? %> <%= z? %>
       BLOCK
     end
