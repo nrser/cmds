@@ -1,8 +1,6 @@
 # encoding: UTF-8
 # frozen_string_literal: true
 
-require 'active_support/core_ext/object/deep_dup'
-
 class Cmds
   # hash of common default values used in method options.
   # 
@@ -110,7 +108,7 @@ class Cmds
   #   
   def self.defaults opts, keys = '*', extras = {}
     if keys == '*'
-      all_defaults.deep_dup
+      all_defaults.dup
     else
       keys.
         map {|key|

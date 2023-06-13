@@ -3,13 +3,13 @@ require 'erubis'
 require 'nrser'
 
 class ShellEruby < Erubis::EscapedEruby
-  def escaped_expr code
+  def escaped_expr(code)
     "Shellwords.escape((#{code.strip}).to_s)"
   end
 end
 
 class ERBContext
-  def initialize args, kwargs
+  def initialize(args, kwargs)
     @args = args
     @kwargs = kwargs
     @arg_index = 0
@@ -33,7 +33,7 @@ class ERBContext
   end
 
   def arg
-    @args.fetch(@arg_index).tap {@arg_index += 1}
+    @args.fetch(@arg_index).tap { @arg_index += 1 }
   end
 end
 
@@ -44,10 +44,10 @@ tpl = <<-BLOCK
   <% end %>
 BLOCK
 
-ctx = ERBContext.new [],  domain: "com.nrser.blah",
-                          key: "don't do it",
-                          values: {x: '<ex>', y: 'why'}
+ctx = ERBContext.new [], { domain: 'com.nrser.blah',
+                           key: "don't do it",
+                           values: { x: '<ex>', y: 'why' } }
 
-s = NRSER.squish ShellEruby.new(tpl).result(ctx.get_binding)
+s = Text.squish ShellEruby.new(tpl).result(ctx.get_binding)
 
 puts s

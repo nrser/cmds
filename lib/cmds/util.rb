@@ -3,12 +3,10 @@
 # stdlib
 require 'shellwords'
 
-# deps
-require 'nrser'
-
 # package
 require 'cmds/util/shell_escape'
 require 'cmds/util/tokenize_options'
+require 'cmds/util/text'
 
 class Cmds
   # class methods
@@ -49,7 +47,7 @@ class Cmds
       string
       
     when :squish
-      NRSER.squish string
+      Text.squish string
       
     when :pretty
       pretty_format string
@@ -127,7 +125,7 @@ class Cmds
   # 
   def self.check_status cmd, status, err = nil
     unless status.equal? 0
-      msg = NRSER.squish <<-END
+      msg = Text.squish <<-END
         command `#{ cmd }` exited with status #{ status }
       END
       

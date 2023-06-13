@@ -1,21 +1,18 @@
 require 'pathname'
 
 class Cmds
-  
   # Constants
   # ============================================================================
-  
+
   # Absolute, expanded path to the gem's root directory.
-  # 
+  #
   # @return [Pathname]
-  # 
-  ROOT = (Pathname.new( __FILE__ ).dirname / '..' / '..').expand_path
-  
-  
+  #
+  ROOT = (Pathname.new(__FILE__).dirname / '..' / '..').expand_path
+
   # Library version string.
-  # 
+  #
   # @return [String]
-  # 
-  VERSION = '0.2.12.dev'
-  
+  #
+  VERSION = '0.3.0.dev'
 end

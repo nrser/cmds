@@ -27,22 +27,20 @@ Gem::Specification.new do |spec|
   # Runtime Dependencies
   # ----------------------------------------------------------------------------
   
-  # Mu guns
-  spec.add_dependency             "nrser",          '~> 0.3.0'
-  
   # ERB replacement with more features
   # 
   # Allows custom auto-escaping, which allows us to shell quote when rendering
   # values into command templates.
   # 
-  spec.add_dependency             'erubis',         '~> 2.7'
+  spec.add_dependency             'erubis',           '~> 2.7'
+  
+  spec.add_dependency             'ougai',            '~>2.0'
+  spec.add_dependency             'semantic_logger',  '~>4.13'
+  spec.add_dependency             'amazing_print',    '~> 1.5'
   
   
   # Development Dependencies
   # ----------------------------------------------------------------------------
-  
-  # You've probably heard of Bundler. I like Bundler.
-  spec.add_development_dependency "bundler",        "~> 1.5"
   
   # And you've probably hear of Rake. I don't like Rake.
   spec.add_development_dependency "rake"

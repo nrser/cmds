@@ -1,15 +1,7 @@
 require 'json'
 require 'pp'
 
-require 'nrser'
-
 require_relative "defaults"
-
-
-# Refinements
-# =======================================================================
-
-using NRSER
 
 
 class Cmds
