@@ -7,7 +7,8 @@ Cmds
 [gem]: https://rubygems.org/gems/cmds
 [travis]: http://travis-ci.org/nrser/cmds
 
-`Cmds` tries to make it easier to read, write and remember using shell commands in Ruby.
+`Cmds` tries to make it easier to read, write and remember using shell commands
+in Ruby.
 
 It treats generating shell the in a similar fashion to generating SQL or HTML.
 
@@ -24,7 +25,8 @@ Status
 
 Ya know, before you get too excited...
 
-It's kinda starting to work. I'll be using it for stuff and seeing how it goes, but no promises until `1.0` of course.
+It's kinda starting to work. I'll be using it for stuff and seeing how it goes,
+but no promises until `1.0` of course.
 
 
 -----------------------------------------------------------------------------
@@ -169,7 +171,10 @@ Or install it globally with:
 Overview
 -----------------------------------------------------------------------------
 
-Cmds is based around a central {Cmds} class that takes a template for the command and a few options and operates by either wrapping the results in a {Cmds::Result} instance or streaming the results to `IO` objects or handler blocks.
+Cmds is based around a central {Cmds} class that takes a template for the
+command and a few options and operates by either wrapping the results in a
+{Cmds::Result} instance or streaming the results to `IO` objects or handler
+blocks.
 
 
 -----------------------------------------------------------------------------
@@ -180,7 +185,8 @@ Features
 
 #### ERB ####
 
-Templates are processed with "[Embedded Ruby][]" (eRuby/ERB) using the [Erubis][] gem.
+Templates are processed with "[Embedded Ruby][]" (eRuby/ERB) using the
+[Erubis][] gem.
 
 [Embedded Ruby]: https://en.wikipedia.org/wiki/ERuby
 [Erubis]: http://www.kuwata-lab.com/erubis/
@@ -211,11 +217,14 @@ For how it works check out
     # => "cp source.txt dest.txt"
     ```
     
-    This will raise an error if it's called after using the last positional argument, but will not complain if all positional arguments are not used.
+    This will raise an error if it's called after using the last positional
+    argument, but will not complain if all positional arguments are not used.
     
-2.  Use the `arg` method made available in the templates to get the next positional arg.
+2.  Use the `arg` method made available in the templates to get the next
+    positional arg.
     
-    Example when using "sugar" methods that take `args` as the single-splat (`*args`):
+    Example when using "sugar" methods that take `args` as the single-splat
+    (`*args`):
     
     ```ruby
     Cmds.prepare  'cp <%= arg %> <%= arg %>',
@@ -264,21 +273,25 @@ If possible, avoid naming your keys:
 -   `get_binding`
 -   `method_missing`
 
-If you must name them those things, don't expect to be able to access them as shown above; use `<%= @kwds[key] %>`.
+If you must name them those things, don't expect to be able to access them as
+shown above; use `<%= @kwds[key] %>`.
 
 
 ###### Keys That Might Not Be There ######
 
-Normally, if you try to interpolate a key that doesn't exist you will get a `KeyError`:
+Normally, if you try to interpolate a key that doesn't exist you will get a
+`KeyError`:
 
 ```ruby
 Cmds.prepare "blah <%= maybe %> <%= arg %>", "value"
 # KeyError: couldn't find keys :maybe or "maybe" in keywords {}
 ```
 
-I like a lot this better than just silently omitting the value, but sometimes you know that they key might not be set and want to receive `nil` if it's not.
+I like a lot this better than just silently omitting the value, but sometimes
+you know that they key might not be set and want to receive `nil` if it's not.
 
-In this case, append `?` to the key name (which is a method call in this case) and you will get `nil` if it's not set:
+In this case, append `?` to the key name (which is a method call in this case)
+and you will get `nil` if it's not set:
 
 ```ruby
 Cmds.prepare "blah <%= maybe? %> <%= arg %>", "value"
@@ -295,7 +308,8 @@ Cmds.prepare "blah <%= maybe? %> <%= arg %>", "value", maybe: "yes"
 
 ##### Shell Escaping #####
 
-Cmds automatically shell-escapes values it interpolates into templates by passing them through the Ruby standard libray's [Shellwords.escape][].
+Cmds automatically shell-escapes values it interpolates into templates by
+passing them through the Ruby standard libray's [Shellwords.escape][].
 
 [Shellwords.escape]: http://ruby-doc.org/stdlib/libdoc/shellwords/rdoc/Shellwords.html#method-c-escape
 
@@ -306,14 +320,19 @@ Cmds.prepare "cp <%= src %> <%= dest %>",
 => "cp source.txt path\\ with\\ spaces.txt"
 ```
 
-It doesn't always do the prettiest job, but it's part of the standard library and seems to work pretty well... shell escaping is a messy and complicated topic (escaping for *which* shell?!), so going with the built-in solution seems reasonable for the moment, though I do hate all those backslashes... they're a pain to read.
+It doesn't always do the prettiest job, but it's part of the standard library
+and seems to work pretty well... shell escaping is a messy and complicated topic
+(escaping for *which* shell?!), so going with the built-in solution seems
+reasonable for the moment, though I do hate all those backslashes... they're a
+pain to read.
 
 
 ###### Raw Interpolation ######
 
 You can render a raw string with `<%== %>`.
 
-To see the difference with regard to the previous example (which would break the `cp` command in question):
+To see the difference with regard to the previous example (which would break the
+`cp` command in question):
 
 ```ruby
 Cmds.prepare "cp <%= src %> <%== dest %>",
@@ -337,7 +356,9 @@ Cmds.prepare "<%== bin %> <%= *args %>",
 
 ##### Splatting (`*`) To Render Multiple Shell Tokens #####
 
-Render multiple shell tokens (individual strings the shell picks up - basically, each one is an entry in `ARGV` for the child process) in one expression tag by prefixing the value with `*`:
+Render multiple shell tokens (individual strings the shell picks up - basically,
+each one is an entry in `ARGV` for the child process) in one expression tag by
+prefixing the value with `*`:
 
 ```ruby
 Cmds.prepare  '<%= *exe %> <%= cmd %> <%= opts %> <%= *args %>',
@@ -379,7 +400,8 @@ Cmds.prepare  '<%= *exe %> <%= cmd %> <%= opts %> <%= *args %>',
     # => "/usr/bin/env,blah do-stuff --really --some-setting=dat-value x,y"
     ```
     
-    Which is probably *not* what you were going for... it would produce an `ARGV`     something like:
+    Which is probably *not* what you were going for... it would produce an
+    `ARGV`, something like:
     
     ```ruby
     [
@@ -398,7 +420,9 @@ You can of course use "splatting" together with slicing or mapping or whatever.
 
 ##### Logic #####
 
-All of ERB is available to you. I've tried to put in features and options that make it largely unnecessary, but if you've got a weird or complicated case, or if you just like the HTML/Rails-esque templating style, it's there for you:
+All of ERB is available to you. I've tried to put in features and options that
+make it largely unnecessary, but if you've got a weird or complicated case, or
+if you just like the HTML/Rails-esque templating style, it's there for you:
 
 ```ruby
 cmd = Cmds.new <<-END
@@ -447,9 +471,13 @@ Cmds also supports a [printf][]-style short-hand. Sort-of.
 
 [printf]: https://en.wikipedia.org/wiki/Printf_format_string
 
-It's a clumsy hack from when I was first writing this library, and I've pretty moved to using the ERB-style, but there are still some examples that use it, and I guess it still works (to whatever extent it ever really did), so it's probably good to mention it.
+It's a clumsy hack from when I was first writing this library, and I've pretty
+moved to using the ERB-style, but there are still some examples that use it, and
+I guess it still works (to whatever extent it ever really did), so it's probably
+good to mention it.
 
-It pretty much just replaces some special patterns with their ERB-equivalent via the {Cmds.replace_shortcuts} method before moving on to ERB processing:
+It pretty much just replaces some special patterns with their ERB-equivalent via
+the {Cmds.replace_shortcuts} method before moving on to ERB processing:
 
 | Format      | ERB Replacement |
 | ----------- | --------------- |
@@ -459,7 +487,8 @@ It pretty much just replaces some special patterns with their ERB-equivalent via
 | `%<key>s`   |  `<%= key %>`   |
 | `%<key?>s`  |  `<%= key? %>`  |
 
-And the escaping versions, where you can put anothe `%` in front to get the literal intead of the subsitution:
+And the escaping versions, where you can put anothe `%` in front to get the
+literal intead of the subsitution:
 
 | Format      | ERB Replacement |
 | ----------- | --------------- |
