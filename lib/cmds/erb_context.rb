@@ -21,10 +21,10 @@ class Cmds
         elsif @kwds.key? sym.to_s
           @kwds[sym.to_s]
         else
-          ::Kernel.raise ::KeyError.new ::Cmds::Text.squish <<-END
-              couldn't find keys #{sym.inspect} or #{sym.to_s.inspect}
-              in keywords #{@kwds.inspect}
-          END
+          ::Kernel.raise ::KeyError.new ::Cmds::Text.squish(
+            %(couldn't find keys #{sym.inspect} or #{sym.to_s.inspect}
+              in keywords #{@kwds.inspect})
+          )
         end
       else
         super sym, *args, &block
