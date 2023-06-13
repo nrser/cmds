@@ -1,4 +1,4 @@
-require 'cmds/refine'
+require 'cmds/refine/module'
 
 using Cmds::Refine
 
@@ -25,6 +25,22 @@ class Cmds
 
     def self.whitespace?(string)
       string =~ WHITESPACE_RE
+    end
+
+    def self.filter_repeated_blank_lines(str, remove_leading: false)
+      out = []
+      lines = str.lines
+      skipping = remove_leading
+      str.lines.each do |line|
+        if line =~ /^\s*$/
+          out << line unless skipping
+          skipping = true
+        else
+          skipping = false
+          out << line
+        end
+      end
+      out.join
     end
 
     def self.find_indent(text)

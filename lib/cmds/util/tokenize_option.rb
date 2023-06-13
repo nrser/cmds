@@ -1,7 +1,10 @@
 require 'json'
 
+require 'cmds/refine'
 require_relative 'defaults'
 require_relative 'tokenize_value'
+
+using Cmds::Refine
 
 class Cmds
   # Turn an option name and value into an array of shell-escaped string
@@ -45,10 +48,8 @@ class Cmds
     # Validate `name`
     unless name.is_a?(String) && name.length > 0
       raise ArgumentError, Text.squish(
-        <<-EOS
-        `name` must be a String of length greater than zero,
-        found #{name.inspect}
-        EOS
+        %(`name` must be a String of length greater than zero,
+          found #{name.inspect})
       )
     end
 
@@ -103,29 +104,30 @@ class Cmds
             # This only really makes sense for lower case a-z, so raise if it's
             # not in there
             unless 'a' <= name && name <= 'z'
-              raise ArgumentError, binding.erb(<<-EOS
-                Can't negate CLI option `<%= name %>` by capitalizing name.
+              raise ArgumentError, binding.erb(
+                <<~EOS
+                  Can't negate CLI option '<%= name %>' by capitalizing name.
 
-                Trying to tokenize option `<%= name %>` with `false` value and:
+                  Trying to tokenize option '<%= name %>' with `false` value and:
 
-                1.  `:false_mode` is set to `<%= opts[:false_mode] %>`, which
-                    tells {Cmds.tokenize_option} to emit a "negating" name with
-                    no value like
-                #{'    '}
-                        {update: false} => --no-update
-                #{'    '}
-                2.  `:false_short_opt_mode` is set to `<%= opts[:false_short_opt_mode] %>`,
-                    which means negate through capitalizing the name character,
-                    like:
-                #{'    '}
-                        {u: false} => -U
+                  1.  `:false_mode` is set to `<%= opts[:false_mode] %>`, which
+                      tells {Cmds.tokenize_option} to emit a "negating" name with
+                      no value like
 
-                3.  But this is only implemented for names in `a-z`
+                          {update: false} => --no-update
 
-                Either change the {Cmds} instance configuration or provide a
-                different CLI option name or value.
-              EOS
-                                              )
+                  2.  `:false_short_opt_mode` is set to `<%= opts[:false_short_opt_mode] %>`,
+                      which means negate through capitalizing the name character,
+                      like:
+
+                          {u: false} => -U
+
+                  3.  But this is only implemented for length 1 names in [a-z]
+
+                  Either change the {Cmds} instance configuration or provide a
+                  different CLI option name or value.
+                EOS
+              )
             end
 
             # Emit {x: false} => ['-X'] style
@@ -149,29 +151,28 @@ class Cmds
             [prefix + esc(name) + separator + esc(string)]
 
           else
-            raise ArgumentError, binding.erb(<<-EOS
-              Bad `:false_short_opt_mode` value:
+            raise ArgumentError, binding.erb(
+              <<~EOS
+                Bad `:false_short_opt_mode` value:
 
-                  <%= opts[:false_short_opt_mode].pretty_inspect %>
+                    <%= opts[:false_short_opt_mode].pretty_inspect %>
 
-              Should be
+                Should be
 
-              1.  :capitalize (or :cap, :upper, :upcase)
-              2.  :long
-              3.  :string
-              4.  any String
+                1.  :capitalize (or :cap, :upper, :upcase)
+                2.  :long
+                3.  :string
+                4.  any String
 
-            EOS
-                                            )
+              EOS
+            )
 
           end # case opts[:false_short_opt_mode]
         end # if :long else
       else
-        raise ArgumentError, Text.squish(<<-EOS
-          bad :false_mode option: #{opts[:false_mode]},
-          should be :omit or :no
-        EOS
-                                        )
+        raise ArgumentError, Text.squish(
+          %(bad :false_mode option: #{opts[:false_mode]}, should be :omit or :no)
+        )
       end
 
     # General case
