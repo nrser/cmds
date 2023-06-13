@@ -7,8 +7,8 @@ require 'pathname'
 
 # Project / Package
 # -----------------------------------------------------------------------
-require 'cmds/core_ext/module'
 require 'cmds/version'
+require 'cmds/refine'
 require 'cmds/log'
 require 'cmds/debug'
 require 'cmds/util'

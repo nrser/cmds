@@ -1,3 +1,7 @@
+require 'cmds/refine'
+
+using Cmds::Refine
+
 class Cmds
   module Text
     # @!group Text Functions
