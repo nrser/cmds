@@ -12,6 +12,19 @@ class Cmds
   # class methods
   # =============
 
+  # Shortcut for Shellwords.escape
+  #
+  # Also makes it easier to change or customize or whatever.
+  #
+  # @see http://ruby-doc.org/stdlib/libdoc/shellwords/rdoc/Shellwords.html#method-c-escape
+  #
+  # @param [#to_s] str
+  # @return [String]
+  #
+  def self.esc(str)
+    Shellwords.escape str
+  end
+
   # tokenize values for the shell. each values is tokenized individually
   # and the results are joined with a space.
   #
@@ -65,48 +78,14 @@ class Cmds
       if line.end_with? '\\'
         line
       elsif line == ''
-        '\\'
+        nil
       elsif line =~ /\s$/
         line + '\\'
       else
         line + ' \\'
       end
-    end.join("\n")
+    end.reject { |x| x.nil? }.join("\n")
   end
-
-  def self.replace_shortcuts(template)
-    template
-      .gsub(
-        # %s => <%= arg %>
-        /(?<=\A|=|[[:space:]])%s(?=\Z|[[:space:]])/,
-        '<%= arg %>'
-      )
-      .gsub(
-        # %%s => %s (escaping)
-        /(?<=\A|[[:space:]])(%+)%s(?=\Z|[[:space:]])/,
-        '\1s'
-      )
-      .gsub(
-        # %{key} => <%= key %>, %{key?} => <%= key? %>
-        /(?<=\A|=|[[:space:]])%\{([a-zA-Z_]+\??)\}(?=\Z|[[:space:]])/,
-        '<%= \1 %>'
-      )
-      .gsub(
-        # %%{key} => %{key}, %%{key?} => %{key?} (escaping)
-        /(?<=\A|[[:space:]])(%+)%\{([a-zA-Z_]+\??)\}(?=\Z|[[:space:]])/,
-        '\1{\2}\3'
-      )
-      .gsub(
-        # %<key>s => <%= key %>, %<key?>s => <%= key? %>
-        /(?<=\A|\=|[[:space:]])\%\<([a-zA-Z_]+\??)\>s(?=\Z|[[:space:]])/,
-        '<%= \1 %>'
-      )
-      .gsub(
-        # %%<key>s => %<key>s, %%<key?>s => %<key?>s (escaping)
-        /(?<=\A|[[:space:]])(\%+)\%\<([a-zA-Z_]+\??)\>s(?=\Z|[[:space:]])/,
-        '\1<\2>s'
-      )
-  end # ::replace_shortcuts
 
   # raise an error unless the exit status is 0.
   #

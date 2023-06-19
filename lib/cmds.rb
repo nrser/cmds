@@ -1,12 +1,5 @@
-# Requirements
-# =======================================================================
-
-# Stdlib
-# -----------------------------------------------------------------------
 require 'pathname'
 
-# Project / Package
-# -----------------------------------------------------------------------
 require 'cmds/version'
 require 'cmds/refine'
 require 'cmds/log'
@@ -20,9 +13,7 @@ require 'cmds/sugar'
 require 'cmds/stream'
 require 'cmds/capture'
 
-# Definitions
-# =======================================================================
-
+# Basically the whole shebang.
 class Cmds
   # Mixins
   # ========================================================================
@@ -282,7 +273,7 @@ class Cmds
         end
     )
 
-    erb = Cmds::ShellEruby.new Cmds.replace_shortcuts(template)
+    erb = Cmds::ShellEruby.new template
 
     rendered = Text.dedent erb.result(context.get_binding)
 

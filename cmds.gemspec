@@ -46,10 +46,12 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'pastel'
 
   # Testing with `rspec`
-  spec.add_development_dependency 'rspec',          '~> 3.7'
+  spec.add_development_dependency 'rspec', '~> 3.7'
 
   # Doc site generation with `yard`
-  spec.add_development_dependency 'yard',           '~> 0.9.12'
+  spec.add_development_dependency 'webrick', '~> 1.8'
+  spec.add_development_dependency 'yard', '~> 0.9.12'
+  spec.add_development_dependency 'yard-clean', '~> 0.1.0'
 
   # These, along with `//.yardopts` config, are *supposed to* result in
   # rendering markdown files and doc comments using

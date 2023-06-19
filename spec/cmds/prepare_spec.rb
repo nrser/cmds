@@ -147,53 +147,49 @@ describe 'Cmds.prepare' do
     end
   end # errors
 
-  context 'shortcuts' do
-    it 'should replace %s' do
+  context 'alternative delimiters %{ }' do
+    it 'should replace %{arg}' do
       expect(
-        Cmds.prepare('./test/echo_cmd.rb %s', 'hello world!')
+        Cmds.prepare('./test/echo_cmd.rb %{arg}', 'hello world!')
       ).to eq './test/echo_cmd.rb hello\ world\!'
     end
 
-    it 'should replace %<key>s' do
+    it 'should replace %{key}' do
       expect(
-        Cmds.prepare('./test/echo_cmd.rb %<key>s', key: 'hello world!')
+        Cmds.prepare('./test/echo_cmd.rb %{key}', key: 'hello world!')
       ).to eq './test/echo_cmd.rb hello\ world\!'
     end
 
-    it 'should replace %<key>s' do
+    it 'should replace %{key[index]}' do
       expect(
-        Cmds.prepare('./test/echo_cmd.rb %<key>s', key: 'hello world!')
-      ).to eq './test/echo_cmd.rb hello\ world\!'
+        Cmds.prepare('./test/echo_cmd.rb %{key[0]} %{key[1]}', key: ['hello', 'world!'])
+      ).to eq './test/echo_cmd.rb hello world\!'
+    end
+
+    it 'should replace %{*key}' do
+      expect(
+        Cmds.prepare('./test/echo_cmd.rb %{*key}', key: ['hello', 'world!'])
+      ).to eq './test/echo_cmd.rb hello world\!'
     end
 
     context '% proceeded by =' do
       it 'handles %s' do
         expect(
-          Cmds.prepare('X=%s ./test/echo_cmd.rb', 'hello world!')
+          Cmds.prepare('X=%{arg} ./test/echo_cmd.rb', 'hello world!')
         ).to eq 'X=hello\ world\! ./test/echo_cmd.rb'
 
         expect(
-          Cmds.prepare('./test/echo_cmd.rb --x=%s', 'hello world!')
+          Cmds.prepare('./test/echo_cmd.rb --x=%{arg}', 'hello world!')
         ).to eq './test/echo_cmd.rb --x=hello\ world\!'
       end
 
       it 'handles %<key>s' do
         expect(
-          Cmds.prepare('X=%<key>s ./test/echo_cmd.rb', key: 'hello world!')
+          Cmds.prepare('X=%{key} ./test/echo_cmd.rb', key: 'hello world!')
         ).to eq 'X=hello\ world\! ./test/echo_cmd.rb'
 
         expect(
-          Cmds.prepare('./test/echo_cmd.rb --x=%<key>s', key: 'hello world!')
-        ).to eq './test/echo_cmd.rb --x=hello\ world\!'
-      end
-
-      it 'handles %<key>s' do
-        expect(
-          Cmds.prepare('X=%<key>s ./test/echo_cmd.rb', key: 'hello world!')
-        ).to eq 'X=hello\ world\! ./test/echo_cmd.rb'
-
-        expect(
-          Cmds.prepare('./test/echo_cmd.rb --x=%<key>s', key: 'hello world!')
+          Cmds.prepare('./test/echo_cmd.rb --x=%{key}', key: 'hello world!')
         ).to eq './test/echo_cmd.rb --x=hello\ world\!'
       end
     end # % proceeded by =

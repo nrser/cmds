@@ -91,7 +91,7 @@ class Cmds
         #
         # [1, 2, 3] => ["'[1,2,3]'"]
 
-        [single_quote(JSON.dump(value))]
+        [quote(JSON.dump(value))]
 
       else
         # SOL
@@ -127,7 +127,7 @@ class Cmds
         #
         # [1, 2, 3] => [%{'{"a":1,"b":2,"c":3}'}]
 
-        [single_quote(JSON.dump(value))]
+        [quote(JSON.dump(value))]
 
       else
         # SOL
