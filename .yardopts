@@ -1,2 +1,6 @@
---markup=markdown
+--markup markdown
 --plugin yard-clean
+--exclude dev/
+-
+docs/features/templating.md
+docs/features/io.md

@@ -130,7 +130,7 @@ class Cmds
 
   # Construct a `Cmds` instance.
   #
-  # @param [String] template
+  # @param template [String]
   #   String template to use when creating the command string to send to the
   #   shell via {#prepare}.
   #
@@ -139,28 +139,28 @@ class Cmds
   #
   #   Available as the {#template} attribute.
   #
-  # @param [Array<Object>] args:
+  # @param args [Array<Object>]
   #   Positional arguments to interpolate into the template on {#prepare}.
   #
   #   Available as the {#args} attribute.
   #
-  # @param [Boolean] assert:
+  # @param assert [Boolean]
   #   When `true`, execution will raise an error if the command doesn't exit
   #   successfully (if the command exits with any status other than `0`).
   #
   #   Available as the {#assert} attribute.
   #
-  # @param [nil | String | Pathname] chdir:
+  # @param chdir [nil | String | Pathname]
   #   Optional directory to change into when executing.
   #
   #   Available as the {#chdir} attribute.
   #
-  # @param [Hash{(String | Symbol) => String}] env:
+  # @param env [Hash{(String | Symbol) => String}]
   #   Hash of environment variables to set when executing the command.
   #
   #   Available as the {#env} attribute.
   #
-  # @param [:inline, :spawn_arg] env_mode:
+  # @param env_mode [:inline, :spawn_arg]
   #   Controls how the env vars are added to the command.
   #
   #   -   `:inline` adds them to the top of the prepared string. This is nice
@@ -173,7 +173,7 @@ class Cmds
   #
   #   Available as the {#env_mode} attribute.
   #
-  # @param [nil, :squish, :pretty, #call] format:
+  # @param format [nil, :squish, :pretty, #call]
   #   Dictates how to format the rendered template string before passing
   #   off to the shell.
   #
@@ -196,13 +196,13 @@ class Cmds
   #
   #   Available as the {#format} attribute.
   #
-  # @param [nil | String | #read] input:
+  # @param input [nil | String | #read]
   #   Input to send to the command on execution. Can be a string or an
   #   `IO`-like object that responds to `#read`.
   #
   #   Available as the {#input} attribute.
   #
-  # @param [Hash{Symbol => Object}] kwds:
+  # @param kwds [Hash{Symbol => Object}]
   #   Keyword arguments to shell escape and interpolate into the template on
   #   {#prepare}.
   #
